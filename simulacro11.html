@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Simulacro INE – Módulo C v6</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#f5f0ff;color:#222;min-height:100dvh;overflow-x:hidden;}
+.header{background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:white;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:200;}
+.header-logo{font-size:1.35rem;flex-shrink:0;}
+.header-text{flex:1;min-width:0;}
+.header h1{font-size:.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header p{font-size:.62rem;opacity:.82;margin-top:1px;}
+.header-right{flex-shrink:0;text-align:right;}
+.timer{font-size:1.45rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.5px;line-height:1;}
+.t-lbl{font-size:.55rem;opacity:.65;margin-top:1px;}
+.timer.warning{color:#ffe082;}
+.timer.danger{color:#ff6b6b;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.progress-wrap{background:#e1bee7;height:3px;}
+.progress-bar{height:3px;background:#fff;transition:width .4s;}
+.main{padding:12px 12px 80px;max-width:600px;margin:0 auto;}
+.start-screen{background:white;border-radius:14px;padding:22px 16px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-top:14px;text-align:center;}
+.start-screen h2{font-size:1.3rem;color:#6a1b9a;margin-bottom:10px;}
+.v6-badge{display:inline-block;background:linear-gradient(90deg,#4a148c,#880e4f);color:#fff;font-size:.72rem;font-weight:700;padding:3px 12px;border-radius:20px;margin-bottom:10px;}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0;}
+.info-card{background:#f3e5f5;border-radius:10px;padding:11px 8px;}
+.info-card .num{font-size:1.5rem;font-weight:800;color:#6a1b9a;}
+.info-card .lbl{font-size:.72rem;color:#666;margin-top:2px;}
+.topic-section{text-align:left;margin:14px 0;}
+.topic-section-title{font-size:.72rem;font-weight:800;color:#6a1b9a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;padding-left:3px;}
+.topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+.topic-pill{background:#f3e5f5;border-radius:7px;padding:6px 10px;font-size:.76rem;color:#6a1b9a;display:flex;justify-content:space-between;}
+.topic-pill .cnt{font-weight:800;}
+.biblio-note{font-size:.67rem;color:#777;background:#f9f5ff;border-radius:8px;padding:9px 11px;margin:10px 0 13px;text-align:left;line-height:1.65;border-left:3px solid #ab47bc;}
+.biblio-note strong{color:#6a1b9a;}
+.question-card{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.07);overflow:hidden;margin-bottom:12px;}
+.q-header{background:#6a1b9a;color:white;padding:10px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+.q-num-label{font-size:.8rem;font-weight:700;letter-spacing:.3px;}
+.q-area-badge{font-size:.65rem;font-weight:700;padding:4px 9px;border-radius:20px;background:rgba(255,255,255,.22);text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
+.q-body{padding:14px 13px;}
+.passage{background:#f5f0ff;border-left:4px solid #ab47bc;padding:11px 12px;border-radius:0 8px 8px 0;margin-bottom:12px;font-size:.83rem;line-height:1.7;}
+.passage-label{font-size:.65rem;font-weight:700;color:#6a1b9a;text-transform:uppercase;margin-bottom:5px;}
+.question-text{font-size:.9rem;font-weight:600;line-height:1.55;margin-bottom:14px;color:#1a1a2e;border-bottom:1px dashed #e0e0e0;padding-bottom:13px;}
+.options{display:flex;flex-direction:column;gap:0;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;}
+.option{display:flex;align-items:stretch;cursor:pointer;transition:background .13s;font-size:.86rem;line-height:1.45;border-bottom:1px solid #e8e8e8;min-height:52px;}
+.option:last-child{border-bottom:none;}
+.option:active:not(.disabled){background:#f3e5f533;}
+.option.selected{background:#f3e5f5;}
+.option.correct{background:#e8f5e9;}
+.option.incorrect{background:#ffebee;}
+.option.disabled{cursor:default;}
+.opt-letter-col{width:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-right:1.5px solid #e0e0e0;background:#fafafa;}
+.option.selected .opt-letter-col{background:#ab47bc;border-right-color:#6a1b9a;}
+.option.correct .opt-letter-col{background:#4caf50;border-right-color:#388e3c;}
+.option.incorrect .opt-letter-col{background:#f44336;border-right-color:#c62828;}
+.opt-letter{width:26px;height:26px;border-radius:50%;border:2px solid #bbb;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;color:#555;background:white;}
+.option.selected .opt-letter{border-color:white;color:#ab47bc;}
+.option.correct .opt-letter{border-color:white;color:#4caf50;}
+.option.incorrect .opt-letter{border-color:white;color:#f44336;}
+.opt-text{flex:1;padding:13px 12px;color:#333;display:flex;align-items:center;}
+.option.selected .opt-text{color:#6a1b9a;font-weight:600;}
+.option.correct .opt-text{color:#2e7d32;font-weight:600;}
+.option.incorrect .opt-text{color:#b71c1c;}
+.opt-result-icon{padding:13px 12px 13px 0;font-size:1rem;display:flex;align-items:center;flex-shrink:0;}
+.biblio-ref{font-size:.62rem;color:#bbb;margin-top:12px;font-style:italic;padding-top:9px;border-top:1px dashed #f0e6ff;}
+.explanation{padding:12px 14px;background:#f5f0ff;border-top:2px solid #ab47bc;font-size:.82rem;line-height:1.65;display:none;}
+.explanation.show{display:block;}
+.explanation strong{color:#6a1b9a;}
+.ver-sol-wrap{text-align:center;margin-bottom:10px;}
+.btn-ver-sol{background:white;border:2px solid #ab47bc;color:#6a1b9a;padding:9px 20px;border-radius:9px;font-weight:700;font-size:.83rem;cursor:pointer;transition:all .15s;min-height:44px;}
+.btn-ver-sol:active{background:#f3e5f5;}
+.btn{padding:10px 18px;border-radius:10px;border:none;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .15s;min-height:44px;}
+.btn:active{transform:scale(.96);}
+.btn-primary{background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:white;}
+.btn-primary:active{opacity:.88;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-secondary{background:#f0f0f0;color:#555;}
+.btn-secondary:active{background:#e0e0e0;}
+.btn-lg{padding:13px 26px;font-size:.93rem;border-radius:12px;}
+.btn-sm{padding:9px 15px;font-size:.8rem;min-height:40px;}
+.nav-bar{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #e0e0e0;padding:8px 14px;padding-bottom:max(8px,env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:8px;box-shadow:0 -2px 10px rgba(0,0,0,.07);z-index:200;}
+.nav-info{font-size:.77rem;color:#888;line-height:1.4;}
+.nav-info span{color:#6a1b9a;font-weight:700;}
+.nav-btns{display:flex;gap:7px;flex-shrink:0;}
+.results-screen{background:white;border-radius:14px;padding:24px 16px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-top:14px;text-align:center;}
+.score-circle{width:108px;height:108px;border-radius:50%;margin:0 auto 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.85rem;font-weight:900;color:white;}
+.score-sub{font-size:.68rem;font-weight:500;opacity:.85;}
+.score-good{background:linear-gradient(135deg,#43a047,#66bb6a);}
+.score-mid{background:linear-gradient(135deg,#f57c00,#ffa726);}
+.score-low{background:linear-gradient(135deg,#c62828,#ef5350);}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0;}
+.stat-card{background:#f9f9f9;border-radius:10px;padding:11px 8px;}
+.stat-card .n{font-size:1.35rem;font-weight:800;}
+.stat-card .l{font-size:.7rem;color:#888;margin-top:2px;}
+.stat-correct .n{color:#43a047;}
+.stat-wrong .n{color:#e53935;}
+.stat-skip .n{color:#888;}
+.area-row{display:flex;align-items:center;gap:9px;margin-bottom:8px;font-size:.81rem;}
+.area-name{flex:1;color:#444;}
+.area-bar-wrap{flex:2;background:#eee;border-radius:4px;height:6px;}
+.area-bar{height:6px;border-radius:4px;}
+.area-pct{width:32px;text-align:right;font-weight:700;font-size:.78rem;}
+.weak-banner{background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:white;border-radius:11px;padding:12px 14px;margin:12px 0;text-align:left;}
+.weak-banner h4{margin-bottom:4px;font-size:.9rem;}
+.weak-banner p{font-size:.78rem;opacity:.9;margin-bottom:6px;}
+.weak-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.weak-tag{background:rgba(255,255,255,.25);border-radius:5px;padding:3px 8px;font-size:.74rem;font-weight:700;}
+.hidden{display:none !important;}
+@media(max-width:360px){.topic-grid{grid-template-columns:1fr}.info-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🏛️</div>
+  <div class="header-text">
+    <h1>Módulo C — Cívico-Electoral · v6</h1>
+    <p>Bibliografía oficial · Nivel experto · 40 preguntas</p>
+  </div>
+  <div class="header-right">
+    <div class="timer" id="timer">50:00</div>
+    <div class="t-lbl">tiempo restante</div>
+  </div>
+</div>
+<div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+
+<div class="main">
+  <div class="start-screen" id="startScreen">
+    <div class="v6-badge">🏆 Versión 6 · Nivel experto · Bibliografía oficial</div>
+    <h2>🏛️ Módulo C — Conocimiento cívico-electoral</h2>
+    <p style="background:#f3e5f5;border-radius:10px;padding:10px;color:#6a1b9a;font-weight:600;margin-bottom:14px;font-size:.82rem">
+      🔥 Preguntas nuevas ancladas en bibliografía oficial · Distinciones jurídicas de tercer orden · Reforma Judicial 2024 incluida
+    </p>
+    <div class="info-grid">
+      <div class="info-card"><div class="num">40</div><div class="lbl">Preguntas</div></div>
+      <div class="info-card"><div class="num">50</div><div class="lbl">Minutos</div></div>
+      <div class="info-card"><div class="num">3</div><div class="lbl">Áreas</div></div>
+    </div>
+    <div class="topic-section">
+      <div class="topic-section-title">📜 1. Sistema Político Mexicano (19 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>1.1 Modelo constitucional</span><span class="cnt">5</span></div>
+        <div class="topic-pill"><span>1.2 Poder Judicial</span><span class="cnt">6</span></div>
+        <div class="topic-pill"><span>1.3 Ciudadanía</span><span class="cnt">5</span></div>
+        <div class="topic-pill"><span>1.4 Sistema de partidos</span><span class="cnt">3</span></div>
+      </div>
+      <div class="topic-section-title">🗳️ 2. Sistema Electoral Mexicano (13 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>2.1 Principios electorales</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>2.2 Tipos de sistemas</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>2.3 Autoridades electorales</span><span class="cnt">3</span></div>
+        <div class="topic-pill"><span>2.4 Delitos electorales</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>2.5 Candidaturas independientes</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>2.6 Proceso Electoral Federal</span><span class="cnt">6</span></div>
+      </div>
+      <div class="topic-section-title">🏢 3. Instituto Nacional Electoral (8 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>3.1 Conocimientos del INE</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>3.2 Órganos del INE</span><span class="cnt">5</span></div>
+        <div class="topic-pill"><span>3.3 Servicio Profesional Electoral</span><span class="cnt">2</span></div>
+      </div>
+    </div>
+    <div class="biblio-note">
+      <strong>📚 Bibliografía oficial:</strong> CPEUM (2025) · LGIPE (2024) · LGPP (2023) · LGSMIME (2024) · LGMDE (2021) · LGSMIME (2024) · ESPEN (2024) · Reglamento de Elecciones INE (2025) · LFCP (2021) · LFRM (2021) · Prud'homme, Cuad. Divulgación N°15, INE (2016) · Reforma Judicial DOF 15/09/2024
+    </div>
+    <p style="font-size:.75rem;color:#888;margin-bottom:14px">⚡ El orden de preguntas cambia en cada sesión</p>
+    <button class="btn btn-primary btn-lg" style="width:100%" onclick="startExam()">Comenzar diagnóstico →</button>
+  </div>
+  <div id="examScreen" class="hidden"></div>
+  <div id="resultsScreen" class="hidden"></div>
+</div>
+
+<div class="nav-bar hidden" id="navBar">
+  <div class="nav-info">Preg. <span id="navCurrent">1</span> de <span id="navTotal">40</span></div>
+  <div class="nav-btns">
+    <button class="btn btn-secondary btn-sm" id="btnPrev" onclick="prevQ()">← Ant.</button>
+    <button class="btn btn-primary btn-sm" id="btnNext" onclick="nextQ()">Sig. →</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   MÓDULO C v6 — 40 preguntas completamente nuevas
+   Bibliografía exacta de la guía VCEYEC (imagen):
+   CPEUM (2025) · LGIPE (2024) · LGPP (2023) · LGSMIME (2024)
+   LGMDE (2021) · ESPEN (2024) · Reglamento de Elecciones INE (2025)
+   LFCP (2021) · LFRM (2021) · Prud'homme, Cuad. N°15 INE (2016)
+   Reforma Judicial DOF 15/09/2024
+   
+   Nivel experto: preguntas con cuatro distinciones jurídicas finas,
+   casos límite normativos, cadenas causales de tercer orden,
+   distractores plausibles con errores parcialmente correctos.
+═══════════════════════════════════════════════════════════════════ */
+let Q = [];
+const QBANK = [
+
+  /* ═══════════════════════════════════════════════════
+     1.1 MODELO CONSTITUCIONAL (5)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"1.1", sal:"Modelo constitucional",
+    ref:"CPEUM (2025), Arts. 40, 41 y 115",
+    p:"El Art. 40 CPEUM define la forma de gobierno como República representativa, democrática, laica y federal. El Art. 115 establece que los municipios serán gobernados por ayuntamientos electos directamente, base de la organización político-administrativa del territorio.",
+    pt:"Federalismo y municipio libre",
+    q:"¿Cuál es la consecuencia jurídica más relevante de que el municipio sea la base de la organización territorial conforme al Art. 115 CPEUM en el contexto del sistema federal?",
+    o:["Que los municipios pueden separarse del estado al que pertenecen mediante referéndum local sin necesidad de reforma constitucional.",
+       "Que el municipio libre constituye el primer nivel de gobierno donde se expresa directamente el principio federalista: tiene personalidad jurídica propia, puede recaudar impuestos, administrar su hacienda y prestar servicios públicos sin subordinación al gobierno estatal en su ámbito de competencia.",
+       "Que los ayuntamientos pueden modificar la Constitución estatal sin intervención del congreso local."],
+    c:1,
+    ex:"El Art. 115 CPEUM consagra el municipio libre como célula básica del federalismo: con personalidad jurídica, patrimonio y competencias propias (agua, alumbrado, seguridad pública). No es subordinado al estado en su esfera; esta autonomía es la expresión concreta del federalismo en el nivel más cercano al ciudadano."
+  },
+  {
+    sa:"1.1", sal:"Modelo constitucional",
+    ref:"CPEUM (2025), Arts. 71 y 72",
+    p:"La iniciativa de ley y el proceso legislativo ordinario federal están regulados en los Arts. 71 y 72 CPEUM, que distinguen quiénes pueden presentar iniciativas y el procedimiento para aprobarlas.",
+    pt:"Proceso legislativo federal",
+    q:"¿Cuál es la diferencia entre el proceso legislativo ordinario del Art. 72 y el proceso de reforma constitucional del Art. 135 CPEUM en cuanto a las mayorías requeridas?",
+    o:["Ambos requieren mayoría calificada de dos terceras partes; la diferencia es solo el quórum de asistencia.",
+       "El proceso ordinario del Art. 72 requiere aprobación por mayoría simple de ambas cámaras; el Art. 135 exige mayoría de dos terceras partes del Congreso de la Unión más aprobación de la mayoría de las legislaturas estatales, haciendo la reforma constitucional sustancialmente más difícil.",
+       "El Art. 72 requiere unanimidad de ambas cámaras; el Art. 135 solo requiere mayoría simple más promulgación del Ejecutivo."],
+    c:1,
+    ex:"La diferencia es cualitativa: el Art. 72 opera con mayoría simple (mitad más uno) en cada cámara. El Art. 135 eleva el umbral a dos terceras partes del Congreso más la aprobación de la mayoría de las 32 legislaturas estatales. Este doble candado protege la rigidez constitucional e impide reformas con apoyo solo parlamentario."
+  },
+  {
+    sa:"1.1", sal:"Modelo constitucional",
+    ref:"CPEUM (2025), Art. 89, fracc. I, II y XVIII",
+    p:"El Art. 89 CPEUM enumera las facultades y obligaciones del Presidente de la República. Entre ellas destacan la facultad reglamentaria, el nombramiento de altos funcionarios y la dirección de la política exterior.",
+    pt:"Facultades constitucionales del Ejecutivo",
+    q:"¿En qué consiste la facultad reglamentaria del Ejecutivo Federal y cuál es su límite constitucional respecto al Poder Legislativo?",
+    o:["La facultad reglamentaria permite al Ejecutivo expedir reglamentos con la misma jerarquía que las leyes del Congreso, pudiendo derogar o modificar estas cuando lo considere necesario.",
+       "La facultad reglamentaria (Art. 89, fracc. I) permite al Ejecutivo expedir reglamentos que desarrollen y detallen la aplicación de las leyes aprobadas por el Congreso, pero no puede ir más allá ni contradecir lo que la ley establece; es una facultad derivada y subordinada a la ley.",
+       "La facultad reglamentaria está suspendida durante los procesos electorales federales por disposicion expresa del INE."],
+    c:1,
+    ex:"La facultad reglamentaria es sub-legal: los reglamentos del Ejecutivo desarrollan la ley pero no pueden ampliar, restringir ni contradecir lo que el Congreso aprobó. Esta subordinación garantiza el principio de legalidad: el Ejecutivo ejecuta; el Legislativo legisla. Un reglamento que excede la ley es inconstitucional y susceptible de amparo."
+  },
+  {
+    sa:"1.1", sal:"Modelo constitucional",
+    ref:"CPEUM (2025), Arts. 102-A y 102-B",
+    p:"El Art. 102-A CPEUM crea la Fiscalía General de la República como órgano autónomo. El Art. 102-B establece el sistema no jurisdiccional de protección de derechos humanos encabezado por la CNDH.",
+    pt:"Organismos constitucionales autónomos",
+    q:"¿Cuál es la diferencia entre la autonomía de la Fiscalía General de la República y la autonomía del INE como organismos constitucionales?",
+    o:["Ambos tienen exactamente el mismo tipo y grado de autonomía; la diferencia es solo el ámbito material en que actúan.",
+       "La FGR es autónoma del Ejecutivo para garantizar que la persecución de delitos no sea controlada políticamente; el INE es autónomo tanto del Ejecutivo como del Legislativo para garantizar la imparcialidad electoral. Ambas autonomías son de base constitucional pero responden a distintos riesgos: la FGR, al uso político del poder penal; el INE, a la manipulación electoral por el gobierno en turno.",
+       "El INE tiene mayor rango constitucional que la FGR porque fue creado mediante reforma panhispánica en 2014, a diferencia de la FGR que es solo una ley orgánica."],
+    c:1,
+    ex:"Ambas son autonomías constitucionales pero con objetos distintos: la FGR se separa del Ejecutivo para evitar la persecución política selectiva. El INE se separa de todos los poderes para evitar que quien gobierna controle las elecciones. La autonomía del INE es más amplia porque excluye también la injerencia legislativa."
+  },
+  {
+    sa:"1.1", sal:"Modelo constitucional",
+    ref:"CPEUM (2025), Art. 29",
+    p:"El Art. 29 CPEUM regula la suspensión de garantías (estado de excepción). Establece los supuestos, el procedimiento y los límites de esta medida extraordinaria.",
+    pt:"Suspensión de garantías constitucionales",
+    q:"¿Cuáles son los derechos que el Art. 29 CPEUM declara absolutamente inderogables incluso durante la suspensión de garantías?",
+    o:["Todos los derechos patrimoniales y económicos de los ciudadanos, porque su suspensión causaría colapso económico.",
+       "El derecho a la no discriminación, a la vida, a la integridad personal, a la protección de la familia, al nombre, a la nacionalidad, a los derechos de la niñez, a los derechos políticos, a las libertades de pensamiento, conciencia y religión, al principio de legalidad y retroactividad, y la prohibición de la pena de muerte.",
+       "Solo el derecho al voto y el derecho a la educación, por ser los derechos fundamentales del Estado democrático."],
+    c:1,
+    ex:"El Art. 29 CPEUM establece un núcleo intangible de derechos que ni siquiera el estado de excepción puede suspender: vida, integridad, no discriminación, derechos de la niñez, derechos políticos, libertad de conciencia, principio de legalidad, prohibición de pena de muerte. Este núcleo refleja el estándar del derecho internacional humanitario."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     1.2 PODER JUDICIAL (6)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"1.2", sal:"Poder Judicial",
+    ref:"CPEUM (2025), Art. 94 — Reforma Judicial DOF 15/09/2024",
+    p:"La reforma judicial publicada el 15 de septiembre de 2024 transformó la integración de la SCJN, el método de designación de sus integrantes y el número de ministros.",
+    pt:"Reforma Judicial 2024 — cambios estructurales",
+    q:"Además de reducir la SCJN de 11 a 9 ministros y establecer su elección por voto popular, ¿qué otro cambio estructural introdujo la reforma de 2024 respecto al Consejo de la Judicatura Federal?",
+    o:["Fusionó el CJF con la SCJN para crear un órgano único de gobierno y jurisdicción del Poder Judicial.",
+       "Sustituyó al CJF por dos órganos especializados: el Tribunal de Disciplina Judicial (funciones disciplinarias y sancionadoras) y el Órgano de Administración Judicial (gestión presupuestal, administrativa y de carrera), separando así las funciones que antes concentraba el CJF.",
+       "Transfirió todas las funciones del CJF al Ministerio de Justicia Federal de nueva creación."],
+    c:1,
+    ex:"La reforma de 2024 desintegró al CJF en dos órganos con funciones separadas: el Tribunal de Disciplina Judicial (sanciona a jueces y magistrados) y el Órgano de Administración Judicial (gestiona el presupuesto, la carrera judicial y los recursos del Poder Judicial). Esta separación evita que el mismo órgano sea juez y administrador de la carrera judicial."
+  },
+  {
+    sa:"1.2", sal:"Poder Judicial",
+    ref:"LGSMIME (2024), Arts. 86–93",
+    p:"El Juicio de Revisión Constitucional Electoral (JRC) es un medio de impugnación previsto en la LGSMIME que permite controvertir actos o resoluciones definitivos de las autoridades electorales locales.",
+    pt:"Juicio de Revisión Constitucional Electoral (JRC)",
+    q:"¿Cuáles son los requisitos de procedencia del JRC que lo distinguen de otros medios de impugnación electoral?",
+    o:["El JRC procede contra cualquier acto del INE o de los OPLEs sin requisito de definitividad; basta que el promovente sea ciudadano.",
+       "El JRC procede exclusivamente para impugnar actos o resoluciones definitivos de autoridades electorales locales; solo pueden promoverlo partidos políticos; la violación alegada debe ser a la CPEUM; y la violación debe ser determinante para el resultado de la elección local.",
+       "El JRC puede ser promovido por cualquier ciudadano para impugnar leyes electorales inconstitucionales directamente ante la SCJN."],
+    c:1,
+    ex:"El JRC tiene cuatro requisitos de procedencia acumulativos: (1) acto o resolución definitivo e inatacable en sede local; (2) promovido por partido político; (3) violación alegada a la CPEUM; (4) que la violación sea determinante para el resultado. La ausencia de cualquiera de ellos hace improcedente el medio."
+  },
+  {
+    sa:"1.2", sal:"Poder Judicial",
+    ref:"LGSMIME (2024), Arts. 61–78",
+    p:"El Juicio de Inconformidad (JIN) y el Recurso de Reconsideración (REC) son dos medios de impugnación que actúan en secuencia dentro del proceso de validación de las elecciones federales.",
+    pt:"JIN y Recurso de Reconsideración — secuencia impugnatoria",
+    q:"¿Cuál es la relación procesal entre el JIN y el Recurso de Reconsideración en la cadena impugnatoria federal?",
+    o:["El REC es un recurso previo al JIN: se interpone antes ante los Consejos Distritales y el JIN ante el TEPJF.",
+       "El JIN es el medio para impugnar los cómputos distritales y las declaraciones de validez de las elecciones de diputados y senadores ante las Salas Regionales del TEPJF; el REC procede para impugnar ante la Sala Superior las resoluciones de las Salas Regionales que modifiquen el triunfo del candidato ganador o anulen una elección.",
+       "El JIN y el REC son medios paralelos e independientes entre sí; el promovente puede usar cualquiera de los dos indistintamente."],
+    c:1,
+    ex:"La secuencia es: Cómputo Distrital → JIN ante Sala Regional → REC ante Sala Superior (solo si la Sala Regional modifica el triunfo o anula la elección). El REC es el último eslabón jurisdiccional electoral antes de que los resultados sean definitivos. No son paralelos sino consecutivos y condicionados."
+  },
+  {
+    sa:"1.2", sal:"Poder Judicial",
+    ref:"CPEUM (2025), Art. 105, fracc. II; LGSMIME (2024)",
+    p:"Las acciones de inconstitucionalidad en materia electoral permiten impugnar normas generales electorales ante la SCJN. Su resolución puede tener efectos generales (erga omnes) si alcanza la mayoría requerida.",
+    pt:"Efectos de las acciones de inconstitucionalidad electorales",
+    q:"¿Qué mayoría necesita la SCJN para que una declaración de inconstitucionalidad tenga efectos generales en materia electoral y qué ocurre si no se alcanza esa mayoría?",
+    o:["Se requiere unanimidad de los 9 ministros; si no se alcanza, la norma queda suspendida temporalmente.",
+       "Se requieren 8 de los 9 votos de los ministros para emitir una declaratoria con efectos generales que derogue la norma impugnada; si no se alcanza esa mayoría calificada, la acción se desecha y la norma sigue vigente aunque haya ministros que la consideren inconstitucional.",
+       "Basta con mayoría simple (5 de 9) para que la declaración tenga efectos generales; no existe umbral de mayoría calificada."],
+    c:1,
+    ex:"El Art. 105 CPEUM exige mayoría calificada (8 de 9 ministros tras la reforma de 2024, anteriormente 8 de 11) para declaraciones con efectos erga omnes. Si no se alcanza esa mayoría, la acción se desecha; la norma impugnada mantiene su vigencia aunque algunos ministros la consideren contraria a la Constitución. Esto genera paradojas: normas que viven pese a tener votos en contra."
+  },
+  {
+    sa:"1.2", sal:"Poder Judicial",
+    ref:"CPEUM (2025), Art. 99; LGSMIME (2024)",
+    q:"¿En qué supuestos específicos puede la Sala Superior del TEPJF declarar la nulidad de una elección de Presidente de la República, de senadores o de diputados federales?",
+    o:["Puede anular cualquier elección cuando algún partido político lo solicite, sin necesidad de probar causales específicas.",
+       "La nulidad de una elección federal procede cuando se acreditan causales específicas previstas en la LGIPE y la LGSMIME: compra y coacción del voto de manera generalizada y determinante, rebase del tope de gastos de campaña en más del 5%, uso ilegal de recursos públicos, o cuando alguna autoridad del Estado intervino decisivamente en la campaña.",
+       "La Sala Superior puede anular una elección solo si el margen entre el primero y el segundo lugar es menor al 1% y un partido lo solicita."],
+    c:1,
+    ex:"La nulidad de elección no opera por discrecionalidad judicial sino por causales tasadas en ley: compra/coacción generalizada y determinante del voto; rebase de tope de gastos en más del 5%; uso ilegal de recursos del erario; o intervención de autoridad estatal determinante. Todas deben ser determinantes para el resultado. El principio es que la nulidad es la última ratio."
+  },
+  {
+    sa:"1.2", sal:"Poder Judicial",
+    ref:"CPEUM (2025), Art. 107; LGSMIME (2024), Arts. 79–85",
+    p:"El JDC protege los derechos político-electorales del ciudadano. Su alcance ha sido ampliado por la jurisprudencia del TEPJF para cubrir situaciones no expresamente previstas en la ley.",
+    pt:"Alcance jurisprudencial del JDC",
+    q:"¿Cuál es el supuesto de procedencia del JDC que la jurisprudencia del TEPJF ha ampliado más allá del texto literal de la LGSMIME?",
+    o:["El JDC solo puede promoverlo el INE en representación de los ciudadanos que no cuenten con representación legal.",
+       "La jurisprudencia del TEPJF ha ampliado el JDC para proteger los derechos de militantes frente a decisiones internas de los partidos que vulneren sus derechos político-electorales (expulsión arbitraria, negativa a postularlos, violaciones al estatuto), aun cuando la LGSMIME originalmente lo concibió solo para actos de autoridades electorales.",
+       "El JDC solo procede para impugnar resultados de elecciones presidenciales; para las demás elecciones existen medios específicos."],
+    c:1,
+    ex:"La jurisprudencia del TEPJF (especialmente la tesis de partido como autoridad en materia electoral intrapartidaria) ha extendido el JDC para proteger a militantes contra actos internos de los partidos que vulneren sus derechos: expulsión indebida, no postulación arbitraria, violación al estatuto. Esto transformó al JDC en el medio de amparo político-electoral por excelencia."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     1.3 CIUDADANÍA (5)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"1.3", sal:"Ciudadanía",
+    ref:"CPEUM (2025), Art. 35, fracc. IX; LFRM (2021)",
+    p:"La Ley Federal de Revocación de Mandato (LFRM, 2021) reglamenta el Art. 35, fracc. IX CPEUM. Su primer ejercicio se realizó en abril de 2022.",
+    pt:"Revocación de mandato — condiciones de vinculatoriedad",
+    q:"¿Bajo qué condiciones el resultado de un proceso de revocación de mandato es vinculante para los poderes de la Unión conforme a la LFRM y la CPEUM?",
+    o:["Siempre es vinculante sin importar la participación, siempre que la mayoría vote por revocar.",
+       "El resultado es vinculante cuando la participación alcanza al menos el 40% de la lista nominal de electores y la mayoría vota a favor de la revocación, siendo esa mayoría superior a la que obtuvo el Presidente en la elección en que ganó el cargo.",
+       "El resultado es vinculante solo si más del 50% del padrón electoral participa y el 60% vota por revocar."],
+    c:1,
+    ex:"La CPEUM y la LFRM establecen una doble condición: participación mínima del 40% de la lista nominal y mayoría por la revocación que supere la votación original del Presidente. Si no se alcanza el umbral de participación, el proceso no tiene efectos vinculantes aunque la mayoría vote por revocar."
+  },
+  {
+    sa:"1.3", sal:"Ciudadanía",
+    ref:"CPEUM (2025), Art. 35, fracc. VIII; LFCP (2021)",
+    p:"La Ley Federal de Consulta Popular (LFCP, 2021) establece los procedimientos, umbrales y materias de la consulta popular prevista en el Art. 35, fracc. VIII CPEUM.",
+    pt:"Consulta popular — materias excluidas",
+    q:"¿Por qué la restricción de derechos humanos es una materia expresamente excluida de la consulta popular conforme al Art. 35, fracc. VIII CPEUM?",
+    o:["Porque las consultas populares son herramientas costosas y deben reservarse solo para temas presupuestales.",
+       "Porque los derechos humanos son derechos de la persona frente al poder y frente a las mayorías; permitir que una mayoría los restrinja mediante consulta vulneraría su carácter universal e indisponible, contradiciendo el principio de que los derechos humanos no son negociables por decisión mayoritaria.",
+       "Porque el TEPJF tiene jurisdicción exclusiva sobre los derechos humanos y no puede compartirla con el electorado."],
+    c:1,
+    ex:"La exclusión de la restricción de derechos humanos de la consulta popular responde a una tensión fundamental de la democracia: las mayorías no pueden decidir suprimir derechos de las minorías. Si los derechos humanos fueran sometibles a votación, la democracia podría devenir en tiranía de la mayoría. La exclusión constitucional protege el núcleo indisponible de la dignidad humana."
+  },
+  {
+    sa:"1.3", sal:"Ciudadanía",
+    ref:"CPEUM (2025), Arts. 36 y 38",
+    p:"El Art. 36 CPEUM establece las obligaciones ciudadanas. El Art. 38 regula la suspensión de derechos y obligaciones ciudadanas.",
+    pt:"Obligaciones ciudadanas y suspensión de derechos",
+    q:"¿Cuál es la diferencia jurídica entre la suspensión de derechos ciudadanos por proceso criminal (Art. 38, fracc. II) y la suspensión por sentencia ejecutoria que imponga inhabilitación (Art. 38, fracc. IV)?",
+    o:["Son la misma causal con distinta redacción; ambas producen exactamente los mismos efectos y duración.",
+       "La suspensión por proceso criminal (fracc. II) es preventiva y opera desde el auto de formal prisión; cesa cuando la sentencia es absolutoria o se extingue la pena. La suspensión por inhabilitación en sentencia ejecutoria (fracc. IV) es punitiva, tiene duración específica fijada en la sentencia y no cesa por absolutoria sino al cumplir el plazo de inhabilitación.",
+       "La suspensión por proceso criminal es permanente; la por sentencia ejecutoria es solo temporal y puede ser perdonada por el Congreso."],
+    c:1,
+    ex:"La distinción es procesal y temporal: la fracc. II es medida cautelar (dura mientras dura el proceso y la pena); la fracc. IV es sanción (dura el tiempo de inhabilitación fijado en sentencia). La primera cesa con la absolución o extinción de la pena; la segunda tiene su propio plazo independiente de esos supuestos."
+  },
+  {
+    sa:"1.3", sal:"Ciudadanía",
+    ref:"CPEUM (2025), Art. 35, fracc. VII",
+    p:"El Art. 35, fracc. VII CPEUM reconoce el derecho de iniciativa ciudadana. Para ejercerlo se requiere el respaldo del 0.13% de la lista nominal de electores.",
+    pt:"Iniciativa ciudadana vs. iniciativa preferente",
+    q:"¿En qué se distingue la iniciativa ciudadana del Art. 35, fracc. VII de la iniciativa preferente del Art. 71, párrafo tercero CPEUM?",
+    o:["Son equivalentes; la diferencia es solo el origen (ciudadanos vs. Ejecutivo) pero producen los mismos efectos procesales.",
+       "La iniciativa ciudadana puede ser presentada directamente por ciudadanos con el 0.13% de firmas de la lista nominal y el Congreso la puede aprobar, modificar o rechazar sin plazo fijo. La iniciativa preferente es presentada por el Ejecutivo Federal y obliga al Congreso a dictaminar en el periodo ordinario de sesiones en que se presentó; si no se dictamina, se tiene por aprobada.",
+       "La iniciativa ciudadana tiene prioridad sobre cualquier otra y el Congreso está obligado a aprobarla sin modificaciones."],
+    c:1,
+    ex:"La distinción es sobre el sujeto y los efectos procesales: la ciudadana (Art. 35, fracc. VII) tiene tramite ordinario sin preferencia ni plazo forzado de dictaminación. La preferente (Art. 71 párr. 3) la envía el Ejecutivo y si el Congreso no dictamina en el periodo, se tiene por aprobada en sus términos. La preferente tiene mayor eficacia procesal que la ciudadana."
+  },
+  {
+    sa:"1.3", sal:"Ciudadanía",
+    ref:"CPEUM (2025), Art. 41, Base I; Prud'homme, Cuad. N°15, INE (2016)",
+    p:"El Art. 41, Base I CPEUM establece que los partidos políticos tienen como fin promover la participación del pueblo en la vida democrática. Prud'homme (2016) analiza la democracia representativa y sus mecanismos de participación en México.",
+    pt:"Partidos y participación ciudadana directa",
+    q:"¿Cuál es la tensión que identifica Prud'homme entre la democracia representativa basada en partidos y los mecanismos de democracia directa incorporados en la CPEUM?",
+    o:["No existe tensión: partidos y democracia directa son mecanismos completamente compatibles sin ninguna contradicción.",
+       "La tensión radica en que los partidos son intermediarios entre ciudadanía y Estado, lo que puede generar distancia entre representantes y representados; los mecanismos de democracia directa (consulta popular, revocación, iniciativa ciudadana) buscan reducir esa distancia pero pueden generar conflicto con la lógica representativa si la decisión ciudadana directa contradice la decisión de los representantes electos.",
+       "Prud'homme concluye que los mecanismos de democracia directa deben abolirse porque debilitan el sistema de partidos."],
+    c:1,
+    ex:"Prud'homme (2016) identifica la tensión clásica en las democracias contemporáneas: la representación otorga mandato pero puede generar brecha entre representante y ciudadano; la democracia directa acorta esa brecha pero puede deslegitimar las decisiones de los cuerpos representativos. La CPEUM busca equilibrar ambas lógicas sin subordinar una a la otra."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     1.4 SISTEMA DE PARTIDOS (3)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"1.4", sal:"Sistema de partidos en México",
+    ref:"LGPP (2023), Arts. 51–61",
+    p:"La LGPP regula el financiamiento de los partidos políticos, distinguiendo el financiamiento público ordinario del de actividades específicas y del de campaña.",
+    pt:"Tipos de financiamiento público de partidos",
+    q:"¿Cuáles son los tres tipos de financiamiento público que la LGPP reconoce para los partidos políticos y en qué se diferencian?",
+    o:["Solo existe un tipo de financiamiento público: el ordinario anual. Los demás son privados y autorregulados por cada partido.",
+       "La LGPP distingue: financiamiento para actividades ordinarias permanentes (sostenimiento de la estructura y actividad política ordinaria); financiamiento para actividades específicas como educación, capacitación y liderazgo político; y financiamiento para gastos de campaña, que solo se activa durante los procesos electorales y tiene reglas y topes distintos.",
+       "Los tres tipos son: financiamiento federal, financiamiento estatal y financiamiento municipal, según el nivel de gobierno."],
+    c:1,
+    ex:"La LGPP clasifica el financiamiento público en tres modalidades con objetos distintos: ordinario (funcionamiento permanente del partido), por actividades específicas (educación cívica, capacitación, investigación) y de campaña (gastos durante el proceso electoral). Cada uno tiene fórmulas de cálculo y reglas de uso distintas para garantizar transparencia y rendición de cuentas."
+  },
+  {
+    sa:"1.4", sal:"Sistema de partidos en México",
+    ref:"LGPP (2023), Arts. 85–98",
+    p:"La LGPP regula las alianzas entre partidos. La coalición, el frente y la fusión son las tres figuras de alianza reconocidas, cada una con efectos jurídicos distintos sobre la identidad y el registro de los partidos.",
+    pt:"Efectos jurídicos de la fusión de partidos",
+    q:"¿Cuál es el efecto jurídico específico de la fusión sobre el registro de los partidos que se fusionan, a diferencia de la coalición?",
+    o:["En la fusión cada partido conserva su registro individual pero comparten candidatos y financiamiento por el periodo electoral.",
+       "La fusión implica la integración permanente de dos o más partidos en uno solo: los partidos fusionados pierden su registro individual y surge un nuevo partido (o uno absorbe al otro). La coalición, en cambio, es temporal para una elección y cada partido conserva su registro.",
+       "La fusión es idéntica a la coalición pero con duración de dos procesos electorales consecutivos."],
+    c:1,
+    ex:"La distinción es definitoria: fusión = pérdida de registros individuales y surgimiento de un nuevo partido (o absorción), efecto permanente. Coalición = alianza temporal para una elección sin pérdida de registros. La fusión extingue la personalidad jurídica de los partidos fusionados; la coalición no."
+  },
+  {
+    sa:"1.4", sal:"Sistema de partidos en México",
+    ref:"LGPP (2023), Art. 94, fracc. I; LGIPE (2024)",
+    p:"Conforme a la LGPP, un partido político nacional pierde su registro si no obtiene el porcentaje mínimo de votación en una elección federal ordinaria.",
+    pt:"Umbral mínimo de votación y pérdida de registro",
+    q:"¿Cuál es la consecuencia jurídica completa de que un partido no obtenga el 3% de la votación válida emitida, más allá de la pérdida del registro?",
+    o:["La única consecuencia es la pérdida del registro; el partido puede reconvertirse en agrupación política nacional automáticamente.",
+       "La pérdida del registro implica también la extinción de sus obligaciones de entrega de informes de gastos, la devolución del financiamiento público no ejercido, la liquidación de su patrimonio, la extinción de sus órganos directivos y la imposibilidad de participar en elecciones hasta que se re-registre con un nuevo proceso de constitución.",
+       "El partido pierde el registro pero puede continuar participando en elecciones locales con el registro que le otorguen los OPLEs de cada estado."],
+    c:1,
+    ex:"La pérdida del registro tiene efectos en cascada: se extingue el partido como sujeto de derecho electoral, debe liquidar su patrimonio, devolver financiamiento no ejercido, cesar sus obligaciones de informes ante el INE y no puede participar en elecciones hasta constituirse nuevamente cumpliendo todos los requisitos. No hay continuidad automática a nivel local."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     2.1 PRINCIPIOS ELECTORALES (1)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"2.1", sal:"Principios del sistema electoral",
+    ref:"CPEUM (2025), Art. 41, Base V; Prud'homme, Cuad. N°15, INE (2016)",
+    p:"El Art. 41 Base V CPEUM establece siete principios rectores de la función electoral del INE. Prud'homme (2016) analiza la dimensión democrática de la función electoral y la importancia de la autonomía institucional.",
+    pt:"Principios electorales y autonomía institucional",
+    q:"¿Cuál es la relación entre el principio de independencia del INE y el principio de imparcialidad, y por qué Prud'homme (2016) señala que la independencia es condición necesaria pero no suficiente para la imparcialidad?",
+    o:["Son el mismo principio expresado de dos formas: si el INE es independiente, automáticamente es imparcial.",
+       "La independencia garantiza que el INE no reciba instrucciones externas de los poderes públicos; la imparcialidad exige que internamente los consejeros actúen sin favoritismos hacia partidos o candidatos. Un INE puede ser formalmente independiente pero en la práctica parcial si sus consejeros tienen sesgos internos. Por eso la independencia es necesaria pero la imparcialidad requiere además mecanismos de control internos.",
+       "La independencia es más importante que la imparcialidad; en caso de conflicto, el INE debe priorizar su independencia sobre su imparcialidad."],
+    c:1,
+    ex:"Prud'homme (2016) distingue la dimensión externa (independencia: sin presiones externas) de la dimensión interna (imparcialidad: sin favoritismos internos). Un organismo puede ser independiente del gobierno pero sus integrantes actuar parcialmente. La imparcialidad requiere, además de independencia, mecanismos de transparencia, accountability y rendición de cuentas interna."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     2.2 TIPOS DE SISTEMAS ELECTORALES (1)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"2.2", sal:"Tipos de sistemas electorales",
+    ref:"CPEUM (2025), Arts. 52–54; Prud'homme, Cuad. N°15, INE (2016)",
+    p:"México usa un sistema mixto para la Cámara de Diputados: 300 por MR en distritos uninominales y 200 por RP en 5 circunscripciones. El techo del Art. 54 limita la sobrerrepresentación.",
+    pt:"Sistema mixto y sus efectos sobre la representación",
+    q:"¿Por qué el sistema mixto mexicano no garantiza proporcionalidad perfecta entre votos y escaños, a diferencia de los sistemas de RP pura?",
+    o:["Porque el INE no tiene competencia para calcular la proporcionalidad exacta; eso corresponde al TEPJF.",
+       "Porque la coexistencia de dos principios (MR y RP) genera inevitablemente sobrerrepresentación o subrepresentación: los partidos que ganan muchos distritos uninominales por MR pueden llegar al techo del 8% de la cláusula de sobrerrepresentación antes de recibir diputados de RP, reduciendo así la proporcionalidad del sistema. La RP solo compensa parcialmente los sesgos de la MR.",
+       "Porque la proporcionalidad perfecta está expresamente prohibida en la CPEUM para garantizar gobernabilidad."],
+    c:1,
+    ex:"El sistema mixto mexicano usa la RP para compensar los sesgos mayoritarios de la MR, pero la compensación es incompleta por la cláusula de sobrerrepresentación del Art. 54. Un partido puede ganar muchos distritos y llegar al techo antes de recibir diputados de RP, resultando en sobrerrepresentación residual. La RP pura evitaría esto, pero el sistema mixto prioriza gobernabilidad sobre proporcionalidad perfecta."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     2.3 AUTORIDADES ELECTORALES (3)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"2.3", sal:"Autoridades electorales",
+    ref:"LGIPE (2024), Arts. 120–124",
+    p:"La LGIPE regula la relación entre el INE y los OPLEs mediante las figuras de atracción y asunción de funciones. Cada figura tiene presupuestos, efectos y alcances distintos.",
+    pt:"Asunción de funciones del INE sobre OPLEs",
+    q:"¿Cuáles son los presupuestos específicos que deben acreditarse para que el INE pueda asumir totalmente las funciones de un OPLE conforme a la LGIPE?",
+    o:["Basta que el Consejo General del INE lo decida por mayoría simple cuando considere conveniente intervenir.",
+       "La asunción procede cuando: (1) se acredita que los principios rectores electorales no están siendo garantizados por el OPLE; (2) existe situación de violencia que impide al OPLE funcionar; (3) el OPLE lo solicita por carecer de condiciones para organizar la elección; o (4) así lo determina el Consejo General por mayoría calificada ante situación excepcional. Ningún supuesto puede operar por mera conveniencia.",
+       "La asunción procede automáticamente en cualquier elección local concurrente con una federal sin necesidad de acreditar ningún presupuesto."],
+    c:1,
+    ex:"La LGIPE establece causales taxativas para la asunción: no es discrecional del INE. Se requiere acreditar causas graves (violación a principios electorales, violencia, incapacidad operativa del OPLE) y la decisión requiere mayoría calificada del Consejo General. El principio es el respeto a la autonomía de los OPLEs; la asunción es la excepción."
+  },
+  {
+    sa:"2.3", sal:"Autoridades electorales",
+    ref:"LGIPE (2024), Arts. 29–34; CPEUM, Art. 41",
+    p:"El INE es un organismo público autónomo con personalidad jurídica y patrimonio propios. Su autonomía se manifiesta en distintas dimensiones: presupuestal, orgánica, funcional y normativa.",
+    pt:"Dimensiones de la autonomía del INE",
+    q:"¿Cuál es la dimensión de autonomía del INE que garantiza que sus decisiones no puedan ser revertidas por ningún poder del Estado?",
+    o:["La autonomía presupuestal: al tener presupuesto propio no depende del Ejecutivo y puede dictar lo que quiera.",
+       "La autonomía funcional: las resoluciones del Consejo General del INE en su ámbito de competencia son definitivas e inimpugnables por la vía administrativa ordinaria; solo pueden ser revisadas jurisdiccionalmente por el TEPJF o impugnadas ante la SCJN mediante acciones de inconstitucionalidad, no por órdenes del Ejecutivo o el Legislativo.",
+       "La autonomía normativa: el INE puede expedir leyes electorales sin pasar por el Congreso."],
+    c:1,
+    ex:"La autonomía funcional es la dimensión que protege las decisiones del INE de la interferencia política: ningún poder puede ordenarle que revoque o cambie una resolución. El único control es jurisdiccional (TEPJF en lo electoral, SCJN en lo constitucional). La autonomía presupuestal y orgánica son condiciones necesarias pero no suficientes para esto."
+  },
+  {
+    sa:"2.3", sal:"Autoridades electorales",
+    ref:"LGMDE (2021); LGIPE (2024); CPEUM, Art. 41",
+    p:"Existen dos tipos de control sobre la conducta de los actores electorales: el control administrativo (infracciones) y el control penal (delitos electorales). Ambos pueden coexistir sobre la misma conducta.",
+    pt:"Coexistencia del control administrativo y penal electoral",
+    q:"¿Puede una misma conducta generar simultáneamente una infracción administrativa electoral sancionada por el INE y un delito electoral investigado por la FISEL? ¿Por qué?",
+    o:["No, porque el principio ne bis in idem prohíbe que la misma conducta sea sancionada dos veces.",
+       "Sí, porque las infracciones administrativas y los delitos electorales son categorías jurídicas distintas con bienes jurídicos protegidos distintos, órganos competentes distintos y sanciones de naturaleza distinta (administrativa vs. penal). El ne bis in idem no impide la concurrencia porque no hay doble sanción de la misma naturaleza por la misma causa.",
+       "Solo puede generar responsabilidad penal; la administrativa queda absorbida automáticamente por la penal."],
+    c:1,
+    ex:"La concurrencia de responsabilidades es posible y frecuente: una misma conducta (ej. destruir boletas) puede ser infracción administrativa (sanciona el INE con multa o pérdida de registro) y delito electoral (investiga la FISEL con consecuencias penales). No viola el ne bis in idem porque las responsabilidades son de distinta naturaleza jurídica. Esta doble vía es un mecanismo de disuasión reforzado."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     2.4 DELITOS ELECTORALES (1)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"2.4", sal:"Delitos electorales",
+    ref:"LGMDE (2021), Arts. 11, 12 y 23",
+    p:"La LGMDE tipifica distintas conductas como delitos electorales. El Art. 11 se refiere a conductas de funcionarios electorales; el Art. 12, a conductas de candidatos y servidores públicos; el Art. 23, a conductas de ministros de culto.",
+    pt:"Tipificación de delitos electorales por sujeto activo",
+    q:"¿Por qué la LGMDE establece tipos penales diferenciados según el sujeto activo del delito electoral?",
+    o:["Por razones procesales: los distintos tipos penales facilitan la investigación de la FISEL al indicar qué pruebas recopilar.",
+       "Porque el daño al bien jurídico protegido (la libertad y autenticidad del sufragio y el correcto desarrollo del proceso electoral) varía según la posición institucional del sujeto activo: un funcionario electoral que manipula actas causa un daño mayor y con distinta naturaleza que un ciudadano que coacciona votos; un servidor público que usa recursos públicos tiene acceso a medios que otros sujetos no tienen. La diferenciación permite una respuesta punitiva proporcional al daño institucional causado.",
+       "Porque la LGMDE transpone literalmente los tipos penales del Código Penal Federal sin ninguna adaptación al ámbito electoral."],
+    c:1,
+    ex:"La tipificación diferenciada por sujeto activo responde al principio de proporcionalidad penal: quien tiene mayor responsabilidad institucional y mayores recursos para afectar el proceso electoral recibe una respuesta más severa. Un Presidente Municipal que usa recursos públicos para coacción electoral causa un daño distinto al de un ciudadano que vende su voto; el tipo penal diferenciado refleja esa asimetría de poder."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     2.5 CANDIDATURAS INDEPENDIENTES (1)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"2.5", sal:"Candidaturas independientes",
+    ref:"LGIPE (2024), Arts. 357–368",
+    p:"Las candidaturas independientes para Presidente, Senador y Diputado federal tienen requisitos diferenciados en la LGIPE. El proceso de obtención del apoyo ciudadano es previo al registro y tiene plazos precisos.",
+    pt:"Proceso de obtención de apoyo ciudadano para candidaturas independientes",
+    q:"¿Cuál es la diferencia entre la etapa de obtención de apoyo ciudadano y la etapa de registro de la candidatura independiente en el proceso previsto en la LGIPE?",
+    o:["Son la misma etapa; el apoyo ciudadano acumulado equivale automáticamente al registro de la candidatura.",
+       "La obtención de apoyo ciudadano es previa al registro: el aspirante debe reunir el porcentaje requerido de firmas dentro del plazo establecido, con la supervisión del INE. Solo después de acreditar el apoyo suficiente ante el INE, el aspirante puede solicitar formalmente el registro como candidato independiente; el registro es el acto jurídico que lo habilita para participar en la elección.",
+       "La obtención de apoyo ciudadano es posterior al registro; primero el INE registra al aspirante y luego verifica que cumpla con las firmas requeridas."],
+    c:1,
+    ex:"El proceso tiene dos etapas secuenciales e independientes: 1) Obtención de apoyo ciudadano (firmas verificadas por el INE dentro del plazo, antes de la apertura del periodo de registro). 2) Registro formal de la candidatura (acto jurídico habilitante, una vez acreditado el apoyo). Sin acreditar el apoyo no hay registro; el orden es irreversible."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     2.6 PROCESO ELECTORAL FEDERAL (6)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"2.6", sal:"Proceso Electoral Federal",
+    ref:"LGIPE (2024), Arts. 227–234; Reglamento de Elecciones INE (2025)",
+    p:"El proceso electoral federal ordinario tiene cuatro etapas. El Reglamento de Elecciones del INE desarrolla los procedimientos específicos de cada etapa con plazos, formatos y protocolos.",
+    pt:"Etapas y plazos del proceso electoral federal",
+    q:"¿Por qué la etapa de preparación de la elección es la más extensa del proceso electoral federal y qué actividades críticas comprende?",
+    o:["Es la más extensa porque incluye la jornada electoral, que por sí sola dura todo un día.",
+       "Es la más extensa porque concentra las actividades logísticas y organizativas de mayor complejidad: instalación de los Consejos Distritales, actualización del listado nominal, insaculación y capacitación de funcionarios de casilla, registro de candidatos, producción y distribución de documentación electoral y acreditación de observadores. Todas estas actividades determinan la calidad de la jornada y requieren meses de trabajo previo.",
+       "Es la más extensa porque el INE necesita más tiempo para publicar las encuestas de salida."],
+    c:1,
+    ex:"La preparación (que inicia en octubre del año previo) concentra las actividades que hacen posible la jornada: sin Consejos Distritales instalados, sin listado nominal actualizado, sin funcionarios de casilla capacitados y sin documentación producida, la elección no puede realizarse. Su extensión es proporcional a la complejidad logística que requiere organizar millones de votos en todo el país."
+  },
+  {
+    sa:"2.6", sal:"Proceso Electoral Federal",
+    ref:"LGIPE (2024), Arts. 311–328; Reglamento de Elecciones INE (2025)",
+    p:"Durante los Cómputos Distritales, los Consejos Distritales suman los resultados casilla por casilla. En ciertos supuestos, deben abrir los paquetes electorales para realizar un recuento.",
+    pt:"Recuento total vs. recuento parcial en Cómputos Distritales",
+    q:"¿Qué distingue procesalmente el recuento total del parcial durante los Cómputos Distritales y bajo qué supuesto se activa cada uno?",
+    o:["Ambos son lo mismo; la distinción es solo cuantitativa: parcial si se abren menos de 100 paquetes; total si se abren todos.",
+       "El recuento parcial se activa cuando en el acta de escrutinio y cómputo de una casilla específica hay inconsistencias entre los datos del acta y los de la copia; opera casilla por casilla. El recuento total se activa automáticamente cuando la diferencia entre el primero y el segundo lugar en el distrito es igual o menor al 1% de la votación distrital total, y se abren todos los paquetes del distrito.",
+       "El recuento total puede ser solicitado por cualquier partido sin necesidad de justificación; el parcial requiere orden judicial."],
+    c:1,
+    ex:"La distinción es procesal y por supuesto: parcial = inconsistencia en acta de casilla específica (cirugía focalizada). Total = margen electoral muy estrecho en el distrito (revisión sistémica). El recuento total es automático al acreditarse el umbral del 1%; el parcial requiere inconsistencia concreta. La distinción garantiza que las revisiones sean proporcionales y justificadas."
+  },
+  {
+    sa:"2.6", sal:"Proceso Electoral Federal",
+    ref:"LGIPE (2024), Arts. 389–401; Reglamento de Elecciones INE (2025)",
+    p:"El PREP opera la noche de la jornada electoral y difunde resultados preliminares. Los cómputos distritales se realizan el miércoles siguiente a la jornada.",
+    pt:"Naturaleza jurídica del PREP y su relación con los resultados oficiales",
+    q:"¿Por qué el PREP no puede ser impugnado ante el TEPJF aunque sus datos difieran de los cómputos distritales?",
+    o:["Porque el TEPJF no tiene jurisdicción sobre los actos del INE realizados durante la jornada electoral.",
+       "Porque el PREP carece de naturaleza jurídica de acto de autoridad: es un sistema informático de difusión de datos preliminares sin efectos jurídicos, que no tiene valor legal ni reemplaza a los cómputos distritales. Al no ser un acto de autoridad que cree, modifique o extinga derechos u obligaciones, no es susceptible de impugnación jurisdiccional.",
+       "Porque los datos del PREP son definitivos y no pueden ser cuestionados una vez publicados."],
+    c:1,
+    ex:"La clave es la naturaleza del PREP: es información, no decisión. No crea ni extingue derechos electorales; solo difunde datos preliminares para la ciudadanía. Los actos impugnables son los que producen efectos jurídicos (cómputos distritales, declaraciones de validez). El PREP puede tener errores sin consecuencias jurídicas precisamente porque no es un acto de autoridad."
+  },
+  {
+    sa:"2.6", sal:"Proceso Electoral Federal",
+    ref:"LGIPE (2024), Art. 251; Reglamento de Elecciones INE (2025)",
+    p:"El Art. 251 LGIPE establece la veda de encuestas. El Reglamento de Elecciones desarrolla los alcances y las sanciones aplicables.",
+    pt:"Veda de encuestas y fundamento constitucional",
+    q:"¿Cuál es el fundamento constitucional que justifica la restricción temporal a la libertad de expresión que implica la veda de encuestas de los 3 días previos a la jornada?",
+    o:["No tiene fundamento constitucional; es una restricción inconstitucional tolerada por el TEPJF.",
+       "El fundamento es la tensión entre dos derechos constitucionales: la libertad de expresión e información (Art. 6 y 7 CPEUM) y el derecho al sufragio libre y secreto (Art. 35, fracc. I). La veda prioriza temporalmente el sufragio libre porque la publicación de encuestas en los días previos puede generar efectos de arrastre o desmovilización que distorsionen la voluntad del elector en el acto mismo de votar.",
+       "El fundamento es exclusivamente infra-constitucional: la LGIPE puede restringir cualquier derecho sin necesidad de justificación constitucional."],
+    c:1,
+    ex:"La veda es una restricción constitucionalmente admisible porque es temporal (3 días), proporcionada al fin que busca (proteger el sufragio libre) y necesaria (los efectos de bandwagon y de desmovilización documentados en la literatura). El Art. 1 CPEUM permite restricciones a los derechos cuando son proporcionales, temporales y orientadas a proteger otros derechos fundamentales."
+  },
+  {
+    sa:"2.6", sal:"Proceso Electoral Federal",
+    ref:"CPEUM (2025), Art. 41, Base III-C; Reglamento de Elecciones INE (2025)",
+    p:"El Art. 41, Base III, Apartado C CPEUM prohíbe la difusión de propaganda gubernamental que implique promoción personalizada de servidores públicos durante las campañas electorales.",
+    pt:"Veda de propaganda gubernamental y acceso a medios",
+    q:"¿Cuál es la diferencia entre la prohibición de propaganda gubernamental personalizada y el régimen de acceso de los partidos a radio y televisión durante las campañas?",
+    o:["Son la misma restricción aplicada a distintos sujetos; no existe diferencia sustantiva entre ellas.",
+       "La prohibición de propaganda gubernamental personalizada restringe a los gobiernos (federal, estatal, municipal) para que no difundan propaganda que promueva la imagen de servidores públicos durante las campañas. El régimen de acceso a radio y TV regula cómo los partidos y candidatos pueden comunicar sus mensajes electorales: deben hacerlo a través de los tiempos del Estado administrados por el INE y tienen prohibido contratar directamente publicidad electoral en medios electrónicos.",
+       "La prohibición gubernamental aplica solo al Ejecutivo Federal; los partidos pueden contratar publicidad electoral libremente en todos los medios."],
+    c:1,
+    ex:"Son dos restricciones distintas con sujetos distintos: la primera limita al gobierno (para evitar ventaja electoral del partido en el poder); la segunda regula a los partidos (para garantizar equidad entre ellos y evitar que el dinero determine el acceso mediático). Ambas son componentes del modelo de comunicación política equitativo que el Art. 41 busca construir."
+  },
+  {
+    sa:"2.6", sal:"Proceso Electoral Federal",
+    ref:"LGIPE (2024), Arts. 302–310; Reglamento de Elecciones INE (2025)",
+    p:"El escrutinio y cómputo en casilla es el procedimiento mediante el cual los funcionarios de la MDC cuentan los votos al cierre de la votación y levantan las actas correspondientes.",
+    pt:"Procedimiento de escrutinio y cómputo en casilla",
+    q:"¿Por qué el orden de las operaciones en el escrutinio y cómputo de casilla es legalmente relevante y qué consecuencias puede tener alterarlo?",
+    o:["El orden no tiene relevancia jurídica; lo importante es que los totales cuadren al final.",
+       "El orden del escrutinio y cómputo (inutilizar boletas sobrantes, contar boletas en urna, separar votos válidos de nulos, contar votos por candidato/partido, llenado del acta) está reglamentado porque cada paso produce un insumo para el siguiente. Alterarlo puede generar inconsistencias entre las cifras del acta y los votos físicos, lo que activa el procedimiento de recuento en el Cómputo Distrital e incluso puede ser causa de impugnación ante el TEPJF.",
+       "Alterar el orden es solo una infracción administrativa sin consecuencias sobre la validez de los votos contados."],
+    c:1,
+    ex:"El Reglamento de Elecciones establece un orden preciso porque cada operación valida la anterior: si no se inutilizan las sobrantes antes de contar, los totales no cuadran; si no se separan nulos antes de contar por partido, los resultados son incorrectos. Las inconsistencias entre el acta y los votos físicos son indicadores de posibles irregularidades que activan el recuento y eventualmente la nulidad."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     3.1 CONOCIMIENTOS DEL INE (1)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"3.1", sal:"Conocimientos fundamentales del INE",
+    ref:"CPEUM (2025), Art. 41; LGIPE (2024); DOF 10/02/2014",
+    p:"La reforma constitucional de 2014 que creó el INE amplió sus atribuciones respecto al IFE, especialmente en materia de relación con los organismos electorales locales.",
+    pt:"Atribuciones del INE sobre los OPLEs — designación de consejeros",
+    q:"¿Cuál es el procedimiento para la designación de los consejeros presidentes de los OPLEs y qué papel juega el INE en ese proceso?",
+    o:["Los gobernadores de cada estado designan directamente a los consejeros de los OPLEs sin participación del INE.",
+       "Los consejeros presidentes y los consejeros electorales de los OPLEs son designados por el Consejo General del INE mediante un proceso de convocatoria pública, evaluación de candidatos y selección por mayoría calificada, sin intervención del poder ejecutivo local. El INE también puede removerlos por causas graves. Esta atribución garantiza la independencia de los OPLEs respecto a los gobiernos estatales.",
+       "Los congresos locales eligen a los consejeros de los OPLEs y el INE solo los ratifica formalmente."],
+    c:1,
+    ex:"La reforma de 2014 nacionalizó la designación de consejeros locales: antes los eligen los congresos estatales (con intervención del gobierno local); ahora los designa el Consejo General del INE mediante proceso público. Esto elimina la captura local de los organismos electorales y garantiza que los OPLEs no sean instrumentos del gobierno estatal en turno."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     3.2 ÓRGANOS DEL INE (5)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"3.2", sal:"Órganos del INE",
+    ref:"LGIPE (2024), Arts. 35–44",
+    p:"El Consejo General del INE está integrado por 11 consejeros electorales: un Consejero Presidente y 10 Consejeros Electorales. Existen reglas específicas para el quórum, las mayorías y el voto de calidad.",
+    pt:"Consejo General — quórum y voto de calidad",
+    q:"¿En qué supuesto específico se aplica el voto de calidad del Consejero Presidente del INE y qué efecto tiene?",
+    o:["El Consejero Presidente siempre tiene dos votos en todas las deliberaciones del Consejo General.",
+       "El voto de calidad del Consejero Presidente se aplica exclusivamente cuando hay empate en la votación del Consejo General; en ese caso su voto define la resolución. Solo opera ante empate y no implica que el Consejero Presidente tenga mayor peso ordinario que los demás consejeros.",
+       "El voto de calidad se aplica en todas las votaciones sobre procesos electorales para garantizar la agilidad de las decisiones."],
+    c:1,
+    ex:"El voto de calidad es un mecanismo de desempate, no de jerarquía ordinaria: en condiciones normales el Consejero Presidente tiene un voto como cualquier consejero. Solo cuando el resultado de la votación es empatado el Consejero Presidente tiene el voto dirimente. Esto garantiza que el Consejo siempre pueda resolver sin quedar paralizado."
+  },
+  {
+    sa:"3.2", sal:"Órganos del INE",
+    ref:"LGIPE (2024), Arts. 83–90",
+    p:"La Contraloría General del INE es el órgano interno de control. Su titular es designado por la Cámara de Diputados y tiene autonomía técnica y de gestión respecto al Consejo General.",
+    pt:"Contraloría General — independencia respecto al Consejo General",
+    q:"¿Por qué es relevante que el titular de la Contraloría General del INE sea designado por la Cámara de Diputados y no por el propio Consejo General?",
+    o:["Para que la Contraloría pueda intervenir en las decisiones del Consejo General cuando lo considere conveniente.",
+       "Porque un órgano de control no puede ser designado por el órgano que controla sin generar un conflicto de intereses estructural. La designación por la Cámara de Diputados garantiza que el Contralor General tenga independencia real para auditar al Consejo General, a los consejeros y al personal del INE sin depender de quienes fiscaliza para su nombramiento y continuidad.",
+       "Para que la Cámara de Diputados pueda instruir directamente a la Contraloría sobre qué auditar en el INE."],
+    c:1,
+    ex:"El diseño institucional sigue el principio: el controlador no puede ser elegido por el controlado. Si el Consejo General designara al Contralor, este no tendría incentivos para investigar a quienes deciden su continuidad. La designación externa por la Cámara rompe esa captura y genera un control genuinamente independiente, aunque sin subordinar al INE al Legislativo en su operación."
+  },
+  {
+    sa:"3.2", sal:"Órganos del INE",
+    ref:"LGIPE (2024), Arts. 125–165",
+    p:"Los órganos del INE a nivel local (estatal) y distrital tienen estructura dual: un órgano permanente técnico-operativo y un órgano temporal colegiado decisorio que se activa durante el proceso electoral.",
+    pt:"Estructura dual de los órganos desconcentrados del INE",
+    q:"¿Cuál es la razón institucional de que los órganos desconcentrados del INE tengan una estructura dual (permanente + temporal) en lugar de operar con un solo órgano todo el año?",
+    o:["Es una decisión puramente presupuestal: resulta más barato contratar consejeros solo durante los procesos electorales.",
+       "La estructura dual responde a distintas necesidades funcionales: el órgano permanente (Junta Local/Distrital Ejecutiva) opera todo el año con funciones técnicas y operativas que requieren continuidad y especialización (educación cívica, mantenimiento del RFE, capacitación). El órgano temporal (Consejo Local/Distrital) opera durante el proceso electoral para tomar decisiones directivas con participación de consejeros ciudadanos que aportan legitimidad democrática al proceso.",
+       "La dualidad fue impuesta por el Congreso sin ninguna justificación funcional; es un vestigio histórico del IFE."],
+    c:1,
+    ex:"La dualidad tiene lógica funcional: la permanencia garantiza expertise técnico y continuidad institucional; la temporalidad del órgano colegiado garantiza que las decisiones electorales cuenten con deliberación colegiada y participación ciudadana. Un solo órgano permanente concentraría demasiado poder en los vocales; un órgano solo temporal perdería la memoria institucional."
+  },
+  {
+    sa:"3.2", sal:"Órganos del INE",
+    ref:"LGIPE (2024), Arts. 163 y ss.; CPEUM, Art. 53",
+    p:"Los 300 Consejos Distritales del INE se instalan durante el proceso electoral y realizan los Cómputos Distritales. Su composición incluye al Vocal Ejecutivo Distrital como presidente y a cuatro consejeros distritales.",
+    pt:"Composición y funciones del Consejo Distrital",
+    q:"¿Por qué el Vocal Ejecutivo Distrital —que es funcionario de carrera del SPEN— preside el Consejo Distrital en lugar de un consejero ciudadano electo para ese fin?",
+    o:["Porque el Vocal Ejecutivo tiene más antigüedad en el INE y eso le da derecho a presidir el órgano.",
+       "Porque el Vocal Ejecutivo Distrital es quien tiene el conocimiento técnico operativo del distrito (padrón, casillas, personal capacitado) y la continuidad institucional necesaria para coordinar los cómputos; preside en su calidad de funcionario de carrera con conocimiento especializado, mientras los consejeros distritales aportan la representatividad ciudadana en la deliberación. La presidencia técnica garantiza que los cómputos se realicen correctamente.",
+       "Porque los consejeros distritales son designados por los partidos y no pueden presidir un órgano de arbitraje."],
+    c:1,
+    ex:"La presidencia del Vocal Ejecutivo combina responsabilidad técnica y accountability: es el funcionario del SPEN que conoce el distrito, su padrón, sus casillas y sus incidencias. Presidir el cómputo exige ese conocimiento especializado. Los consejeros distritales son ciudadanos sin vínculo de carrera con el INE; su rol es deliberativo y de control, no operativo."
+  },
+  {
+    sa:"3.2", sal:"Órganos del INE",
+    ref:"LGIPE (2024), Arts. 91–100",
+    p:"La Secretaría Ejecutiva del INE es el cargo de máxima responsabilidad ejecutiva del instituto. Su titular preside la Junta General Ejecutiva y coordina a las Direcciones Ejecutivas.",
+    pt:"Secretaría Ejecutiva y Junta General Ejecutiva",
+    q:"¿Cuál es la diferencia entre las funciones del Secretario/a Ejecutivo/a del INE y las del Consejero Presidente en la estructura de gobierno del instituto?",
+    o:["Son el mismo cargo; el Secretario Ejecutivo es el nombre alterno del Consejero Presidente.",
+       "El Consejero Presidente preside el Consejo General (órgano decisorio máximo de dirección), vota en sus resoluciones y representa públicamente al INE. El Secretario Ejecutivo dirige la operación técnica cotidiana del instituto: preside la Junta General Ejecutiva, coordina a los directores ejecutivos, da fe de los acuerdos del Consejo General y es el responsable ejecutivo de la implementación de las decisiones del Consejo.",
+       "El Secretario Ejecutivo tiene mayor jerarquía que el Consejero Presidente porque es quien dirige la operación diaria del INE."],
+    c:1,
+    ex:"La distinción es entre gobierno (Consejero Presidente + Consejo General: deciden) y ejecución (Secretario Ejecutivo + Junta General Ejecutiva: implementan). El Consejero Presidente es la máxima autoridad normativa y representativa; el Secretario Ejecutivo es la máxima autoridad operativa. Sin esta distinción, el Consejo General se perdería en la gestión cotidiana."
+  },
+
+  /* ═══════════════════════════════════════════════════
+     3.3 SERVICIO PROFESIONAL ELECTORAL NACIONAL (2)
+  ═══════════════════════════════════════════════════ */
+  {
+    sa:"3.3", sal:"Servicio Profesional Electoral Nacional",
+    ref:"ESPEN (2024), Arts. 1–15; CPEUM, Art. 41, Base V-C",
+    p:"El SPEN comprende al personal directivo, ejecutivo y técnico del INE y los OPLEs. El Estatuto establece las ramas del servicio, las categorías de puestos y los procesos de carrera.",
+    pt:"Ramas del SPEN y sus diferencias",
+    q:"¿Cuál es la diferencia entre la rama ejecutiva y la rama técnica del SPEN en términos de funciones y nivel jerárquico?",
+    o:["No existe diferencia; ambas ramas tienen los mismos puestos y funciones; la distinción es solo nominal.",
+       "La rama ejecutiva del SPEN comprende los puestos de conducción y coordinación institucional (Vocales, Directores Ejecutivos, Coordinadores) con responsabilidad sobre áreas completas y toma de decisiones de nivel gerencial. La rama técnica comprende los puestos de soporte especializado (analistas, técnicos, capacitadores) con funciones de implementación y operación. Ambas ramas tienen procesos de ingreso por concurso pero con perfiles y evaluaciones distintas.",
+       "La rama ejecutiva es para personal con doctorado; la técnica para personal con licenciatura, sin más distinción."],
+    c:1,
+    ex:"La distinción entre ramas refleja el principio de carrera meritocrática especializada: los puestos directivos (rama ejecutiva) requieren competencias de gestión, liderazgo y decisión; los técnicos requieren competencias operativas especializadas. Tener ramas distintas permite diseñar concursos, evaluaciones y planes de desarrollo diferenciados para cada perfil, garantizando idoneidad en cada nivel."
+  },
+  {
+    sa:"3.3", sal:"Servicio Profesional Electoral Nacional",
+    ref:"ESPEN (2024), Arts. 60–75",
+    p:"El Estatuto del SPEN regula el régimen disciplinario del personal. Las faltas se clasifican en leves, graves y muy graves, con sanciones gradualmente más severas.",
+    pt:"Régimen disciplinario del SPEN — principio de proporcionalidad",
+    q:"¿Cuál es el principio que justifica la gradación de sanciones en el régimen disciplinario del SPEN (desde amonestación hasta separación del servicio)?",
+    o:["El principio de economía procesal: sanciones menores evitan procedimientos largos y costosos.",
+       "El principio de proporcionalidad: la sanción debe ser adecuada en intensidad al daño causado a la función electoral y a los principios del SPEN. Una falta administrativa menor (retraso en un informe) no puede recibir la misma sanción que una grave (parcialidad en el ejercicio de funciones electorales); la gradación garantiza que la respuesta disciplinaria sea justa y no excesiva respecto a la conducta.",
+       "El principio de discrecionalidad: el Comité del SPEN puede elegir libremente cualquier sanción sin restricciones para cualquier falta."],
+    c:1,
+    ex:"El principio de proporcionalidad en el derecho administrativo sancionador exige que la sanción sea proporcional a la gravedad de la infracción. El ESPEN lo aplica clasificando las faltas por gravedad y asignando rangos de sanción correspondientes: amonestación (leves), suspensión (graves), separación (muy graves). Sin esta gradación, el régimen disciplinario sería arbitrario e inconstitucional."
+  }
+];
+
+/* ═══════════════════════════════════════════════════════
+   ESTADO GLOBAL
+═══════════════════════════════════════════════════════ */
+const TIME_LIMIT = 50 * 60;
+let answers, revealed, current, timerInterval, secondsLeft;
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+const SS = {
+  "1.1":{bg:"#e8eaf6",color:"#3949ab",icon:"📜"},
+  "1.2":{bg:"#fce4ec",color:"#c2185b",icon:"⚖️"},
+  "1.3":{bg:"#e0f2f1",color:"#00796b",icon:"🧑‍🤝‍🧑"},
+  "1.4":{bg:"#fff3e0",color:"#e65100",icon:"🏴"},
+  "2.1":{bg:"#f3e5f5",color:"#7b1fa2",icon:"📋"},
+  "2.2":{bg:"#e1f5fe",color:"#0277bd",icon:"🗳️"},
+  "2.3":{bg:"#e8f5e9",color:"#2e7d32",icon:"🏛️"},
+  "2.4":{bg:"#ffebee",color:"#c62828",icon:"🚫"},
+  "2.5":{bg:"#f9fbe7",color:"#558b2f",icon:"👤"},
+  "2.6":{bg:"#e3f2fd",color:"#1565c0",icon:"🗓️"},
+  "3.1":{bg:"#fbe9e7",color:"#bf360c",icon:"🏢"},
+  "3.2":{bg:"#f3e5f5",color:"#6a1b9a",icon:"⚙️"},
+  "3.3":{bg:"#e8eaf6",color:"#283593",icon:"🎓"}
+};
+
+/* ═══════════════════════════════════════════════════════
+   INICIO
+═══════════════════════════════════════════════════════ */
+function startExam(){
+  if(timerInterval) clearInterval(timerInterval);
+  const byArea = {};
+  QBANK.forEach(q => { if(!byArea[q.sa]) byArea[q.sa]=[]; byArea[q.sa].push(q); });
+  Object.keys(byArea).forEach(k => byArea[k] = shuffle(byArea[k]));
+  Q = shuffle([
+    ...byArea["1.1"],...byArea["1.2"],...byArea["1.3"],...byArea["1.4"],
+    ...byArea["2.1"],...byArea["2.2"],...byArea["2.3"],...byArea["2.4"],
+    ...byArea["2.5"],...byArea["2.6"],
+    ...byArea["3.1"],...byArea["3.2"],...byArea["3.3"]
+  ]);
+  answers     = new Array(Q.length).fill(null);
+  revealed    = new Array(Q.length).fill(false);
+  current     = 0;
+  secondsLeft = TIME_LIMIT;
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('examScreen').classList.remove('hidden');
+  document.getElementById('navBar').classList.remove('hidden');
+  renderQuestion(0);
+  startTimer();
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════ */
+function renderQuestion(idx){
+  current = idx;
+  const q = Q[idx];
+  const sc = SS[q.sa] || {bg:"#f3e5f5",color:"#6a1b9a",icon:"📌"};
+  const isR = revealed[idx];
+  const sel = answers[idx];
+
+  let ph = '';
+  if(q.p) ph = `<div class="passage"><div class="passage-label">📄 ${q.pt}</div>${q.p.replace(/\n/g,'<br>')}</div>`;
+
+  const L = ['A','B','C'];
+  const opts = q.o.map((o,i) => {
+    let cls = 'option', icon = '';
+    if(isR){
+      cls += ' disabled';
+      if(i===q.c){ cls += ' correct'; icon = '<div class="opt-result-icon">✅</div>'; }
+      else if(i===sel && i!==q.c){ cls += ' incorrect'; icon = '<div class="opt-result-icon">❌</div>'; }
+    } else if(i===sel) cls += ' selected';
+    return `<div class="${cls}" onclick="sel(${idx},${i})">
+      <div class="opt-letter-col"><div class="opt-letter">${L[i]}</div></div>
+      <div class="opt-text">${o}</div>${icon}
+    </div>`;
+  }).join('');
+
+  const ri = isR ? (sel===q.c ? '✅ Correcto' : sel===null ? '⏭️ Sin responder' : '❌ Incorrecto') : '';
+
+  window.scrollTo({top:0,behavior:'instant'});
+  document.getElementById('examScreen').innerHTML = `
+    <div class="question-card">
+      <div class="q-header">
+        <div class="q-num-label">Preg. ${idx+1}/${Q.length}</div>
+        <div class="q-area-badge">${sc.icon} ${q.sal}</div>
+      </div>
+      <div class="q-body">
+        ${ph}
+        <div class="question-text">${q.q}</div>
+        <div class="options">${opts}</div>
+        <div class="biblio-ref">📚 ${q.ref}</div>
+      </div>
+      <div class="explanation ${isR?'show':''}">
+        <strong>${ri}${ri?' — ':''}Explicación:</strong> ${q.ex}
+      </div>
+    </div>
+    ${!isR && answers[idx]!==null
+      ? '<div class="ver-sol-wrap"><button class="btn-ver-sol" onclick="rev(' + idx + ')">Ver explicación 💡</button></div>'
+      : ''}
+  `;
+  document.getElementById('progressBar').style.width = ((idx+1)/Q.length*100)+'%';
+  document.getElementById('navCurrent').textContent = idx+1;
+  document.getElementById('navTotal').textContent   = Q.length;
+  document.getElementById('btnPrev').disabled = idx===0;
+  document.getElementById('btnNext').textContent = idx===Q.length-1 ? '🏁 Finalizar' : 'Sig. →';
+}
+
+function sel(qi,oi){ if(revealed[qi]) return; answers[qi]=oi; renderQuestion(qi); }
+function rev(idx){ revealed[idx]=true; renderQuestion(idx); }
+function nextQ(){ if(current<Q.length-1) renderQuestion(current+1); else showResults(); }
+function prevQ(){ if(current>0) renderQuestion(current-1); }
+
+/* ═══════════════════════════════════════════════════════
+   TIMER
+═══════════════════════════════════════════════════════ */
+function startTimer(){
+  timerInterval = setInterval(()=>{
+    secondsLeft--;
+    const m = Math.floor(secondsLeft/60).toString().padStart(2,'0');
+    const s = (secondsLeft%60).toString().padStart(2,'0');
+    const el = document.getElementById('timer');
+    if(!el) return;
+    el.textContent = m + ':' + s;
+    el.className = 'timer' + (secondsLeft<300?' danger':secondsLeft<600?' warning':'');
+    if(secondsLeft<=0){ clearInterval(timerInterval); showResults(); }
+  },1000);
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESULTADOS
+═══════════════════════════════════════════════════════ */
+function showResults(){
+  clearInterval(timerInterval);
+  document.getElementById('examScreen').classList.add('hidden');
+  document.getElementById('navBar').classList.add('hidden');
+
+  const total    = Q.length;
+  const answered = answers.filter(a=>a!==null).length;
+  const correct  = answers.filter((a,i)=>a===Q[i].c).length;
+  const wrong    = answered - correct;
+  const skipped  = total - answered;
+  const pct      = Math.round(correct/total*100);
+
+  const areas = {
+    "Sistema Político Mexicano":    {total:0,correct:0},
+    "Sistema Electoral Mexicano":   {total:0,correct:0},
+    "Instituto Nacional Electoral": {total:0,correct:0}
+  };
+  const areaMap = {
+    "1.1":"Sistema Político Mexicano","1.2":"Sistema Político Mexicano",
+    "1.3":"Sistema Político Mexicano","1.4":"Sistema Político Mexicano",
+    "2.1":"Sistema Electoral Mexicano","2.2":"Sistema Electoral Mexicano",
+    "2.3":"Sistema Electoral Mexicano","2.4":"Sistema Electoral Mexicano",
+    "2.5":"Sistema Electoral Mexicano","2.6":"Sistema Electoral Mexicano",
+    "3.1":"Instituto Nacional Electoral","3.2":"Instituto Nacional Electoral",
+    "3.3":"Instituto Nacional Electoral"
+  };
+
+  const subs = {};
+  Q.forEach((q,i)=>{
+    const area = areaMap[q.sa];
+    areas[area].total++;
+    if(answers[i]===q.c) areas[area].correct++;
+    if(!subs[q.sa]) subs[q.sa]={label:q.sal,total:0,correct:0};
+    subs[q.sa].total++;
+    if(answers[i]===q.c) subs[q.sa].correct++;
+  });
+
+  const weak = Object.entries(subs).filter(([,s])=>s.correct/s.total<0.6).map(([,s])=>s.label);
+  const cc   = pct>=70?'score-good':pct>=50?'score-mid':'score-low';
+  const msg  = pct>=80 ? 'Excelente. Dominas el conocimiento cívico-electoral a nivel experto.'
+             : pct>=60 ? 'Buen avance. Refuerza los temas señalados.'
+             : 'Diagnóstico listo. Enfócate en las áreas marcadas.';
+
+  const rows = Object.entries(areas).map(([name,a])=>{
+    const p  = Math.round(a.correct/a.total*100);
+    const icon = p>=80?'✅':p>=60?'⚠️':'❌';
+    const bc = p>=60 ? 'linear-gradient(90deg,#6a1b9a,#ab47bc)' : 'linear-gradient(90deg,#c62828,#ef5350)';
+    return '<div class="area-row">'
+      + '<div class="area-name">' + icon + ' ' + name + '</div>'
+      + '<div class="area-bar-wrap"><div class="area-bar" style="width:' + p + '%;background:' + bc + '"></div></div>'
+      + '<div class="area-pct" style="color:' + (p>=60?'#6a1b9a':'#c62828') + '">' + p + '%</div>'
+      + '</div>';
+  }).join('');
+
+  const wb = weak.length
+    ? '<div class="weak-banner"><h4>🎯 Estudia esto primero:</h4><p>Menos del 60% en estas subáreas. Priorízalas.</p><div class="weak-tags">' + weak.map(t=>'<span class="weak-tag">📌 ' + t + '</span>').join('') + '</div></div>'
+    : '<div style="background:#e8f5e9;border-radius:10px;padding:14px;margin:14px 0;color:#2e7d32;font-weight:600">✅ ¡Dominas todas las áreas!</div>';
+
+  const elapsed = Math.max(0, TIME_LIMIT - secondsLeft);
+  const tm = Math.floor(elapsed/60);
+  const ts = elapsed%60;
+
+  document.getElementById('resultsScreen').innerHTML = ''
+    + '<div class="results-screen">'
+    + '<div style="background:#f3e5f5;border-radius:10px;padding:9px 14px;margin-bottom:18px;font-size:0.82rem;color:#6a1b9a;font-weight:600">📋 DIAGNÓSTICO MÓDULO C v6 — ' + new Date().toLocaleDateString('es-MX') + '</div>'
+    + '<div class="score-circle ' + cc + '">' + pct + '%<div class="score-sub">' + correct + '/' + total + '</div></div>'
+    + '<h2 style="margin-bottom:8px">' + msg + '</h2>'
+    + '<p style="margin-bottom:20px;color:#777;font-size:.85rem">Tiempo: ' + tm + 'm ' + ts + 's · Respondidas: ' + answered + '/' + total + '</p>'
+    + '<div class="stats-grid">'
+    + '<div class="stat-card stat-correct"><div class="n">' + correct + '</div><div class="l">✅ Correctas</div></div>'
+    + '<div class="stat-card stat-wrong"><div class="n">' + wrong + '</div><div class="l">❌ Incorrectas</div></div>'
+    + '<div class="stat-card stat-skip"><div class="n">' + skipped + '</div><div class="l">⏭️ Saltadas</div></div>'
+    + '</div>'
+    + wb
+    + '<div style="text-align:left;margin-bottom:24px"><h3 style="font-size:0.9rem;font-weight:700;color:#444;margin-bottom:10px">Desempeño por área</h3>' + rows + '</div>'
+    + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">'
+    + '<button class="btn btn-primary btn-lg" onclick="reviewExam()">Revisar con explicaciones</button>'
+    + '<button class="btn btn-secondary btn-lg" onclick="startExam()">🔀 Nuevo diagnóstico</button>'
+    + '</div>'
+    + '<div style="margin-top:18px;padding:10px 12px;background:#f9f5ff;border-radius:8px;font-size:0.68rem;color:#aaa;text-align:left;line-height:1.7;border-left:3px solid #ce93d8">'
+    + '📚 <strong style="color:#9c27b0">Bibliografía oficial:</strong> '
+    + 'Cámara de Diputados. CPEUM (2025) · LGIPE (2024) · LGPP (2023) · LGSMIME (2024) · LGMDE (2021) · '
+    + 'INE. ESPEN (2024) · Reglamento de Elecciones (2025) · '
+    + 'LFCP (2021) · LFRM (2021) · '
+    + 'Prud\'homme, Cuad. Divulgación N°15, INE (2016) · Reforma Judicial DOF 15/09/2024'
+    + '</div>'
+    + '</div>';
+
+  document.getElementById('resultsScreen').classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+
+function reviewExam(){
+  document.getElementById('resultsScreen').classList.add('hidden');
+  document.getElementById('examScreen').classList.remove('hidden');
+  document.getElementById('navBar').classList.remove('hidden');
+  revealed = revealed.map(()=>true);
+  renderQuestion(0);
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

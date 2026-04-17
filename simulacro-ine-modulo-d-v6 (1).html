@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulacro INE – Módulo D · v6 (Aleatorio)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0fff4; color: #222; min-height: 100vh; }
+  .header { background: linear-gradient(135deg, #1b5e20, #43a047); color: white; padding: 18px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .header-logo { font-size: 1.8rem; }
+  .header h1 { font-size: 1.1rem; font-weight: 700; }
+  .header p { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
+  .header-right { margin-left: auto; text-align: right; }
+  .timer { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .timer.warning { color: #ffe082; }
+  .timer.danger { color: #ff6b6b; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
+  .progress-wrap { background: #c8e6c9; height: 5px; }
+  .progress-bar { height: 5px; background: #fff; transition: width 0.4s; }
+  .main { max-width: 760px; margin: 0 auto; padding: 20px 16px 90px; }
+
+  .start-screen { background: white; border-radius: 16px; padding: 36px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-top: 30px; }
+  .start-screen h2 { font-size: 1.4rem; color: #1b5e20; margin-bottom: 10px; }
+  .info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 20px 0; }
+  .info-card { background: #e8f5e9; border-radius: 12px; padding: 14px; }
+  .info-card .num { font-size: 1.7rem; font-weight: 800; color: #1b5e20; }
+  .info-card .lbl { font-size: 0.78rem; color: #666; margin-top: 2px; }
+  .topic-section { text-align: left; margin: 14px 0; }
+  .topic-section-title { font-size: 0.76rem; font-weight: 800; color: #1b5e20; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 7px; padding-left: 4px; border-left: 3px solid #43a047; padding-left: 8px; }
+  .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .topic-pill { background: #e8f5e9; border-radius: 8px; padding: 7px 11px; font-size: 0.79rem; color: #1b5e20; display: flex; justify-content: space-between; gap: 8px; }
+  .topic-pill .cnt { font-weight: 800; flex-shrink: 0; }
+
+  .question-card { background: white; border-radius: 14px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); margin-bottom: 16px; }
+  .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 6px; }
+  .q-badge { font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
+  .q-num { color: #aaa; font-size: 0.82rem; }
+  .passage { background: #f0fff4; border-left: 4px solid #43a047; padding: 14px; border-radius: 0 8px 8px 0; margin-bottom: 16px; font-size: 0.9rem; line-height: 1.7; }
+  .passage-label { font-size: 0.72rem; font-weight: 700; color: #1b5e20; text-transform: uppercase; margin-bottom: 6px; }
+  .question-text { font-size: 0.97rem; font-weight: 600; line-height: 1.5; margin-bottom: 18px; }
+  .options { display: flex; flex-direction: column; gap: 9px; }
+  .option { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all 0.18s; font-size: 0.9rem; line-height: 1.4; }
+  .option:hover:not(.disabled) { border-color: #43a047; background: #e8f5e933; }
+  .option.selected { border-color: #43a047; background: #e8f5e955; }
+  .option.correct { border-color: #4caf50; background: #e8f5e9; }
+  .option.incorrect { border-color: #f44336; background: #ffebee; }
+  .option.disabled { cursor: default; }
+  .option-letter { width: 26px; height: 26px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0; }
+  .option.selected .option-letter { background: #43a047; color: white; }
+  .option.correct .option-letter { background: #4caf50; color: white; }
+  .option.incorrect .option-letter { background: #f44336; color: white; }
+  .explanation { margin-top: 14px; padding: 12px 14px; background: #f0fff4; border-radius: 10px; border-left: 4px solid #43a047; font-size: 0.85rem; line-height: 1.6; display: none; }
+  .explanation.show { display: block; }
+
+  .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e0e0e0; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.06); }
+  .nav-info { font-size: 0.82rem; color: #888; }
+  .nav-info span { color: #1b5e20; font-weight: 700; }
+  .btn { padding: 11px 22px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.18s; }
+  .btn-primary { background: linear-gradient(135deg,#1b5e20,#43a047); color: white; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: #f0f0f0; color: #555; }
+  .btn-secondary:hover { background: #e0e0e0; }
+  .btn-lg { padding: 15px 36px; font-size: 1rem; border-radius: 12px; }
+
+  .results-screen { background: white; border-radius: 16px; padding: 36px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-top: 20px; text-align: center; }
+  .score-circle { width: 130px; height: 130px; border-radius: 50%; margin: 0 auto 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; color: white; }
+  .score-sub { font-size: 0.72rem; font-weight: 500; opacity: 0.85; }
+  .score-good { background: linear-gradient(135deg,#43a047,#66bb6a); }
+  .score-mid { background: linear-gradient(135deg,#f57c00,#ffa726); }
+  .score-low { background: linear-gradient(135deg,#c62828,#ef5350); }
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 20px 0; }
+  .stat-card { background: #f9f9f9; border-radius: 10px; padding: 14px; }
+  .stat-card .n { font-size: 1.5rem; font-weight: 800; }
+  .stat-card .l { font-size: 0.75rem; color: #888; margin-top: 2px; }
+  .stat-correct .n { color: #43a047; }
+  .stat-wrong .n { color: #e53935; }
+  .stat-skip .n { color: #888; }
+  .area-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.85rem; }
+  .area-name { flex: 1; color: #444; }
+  .area-bar-wrap { flex: 2; background: #eee; border-radius: 4px; height: 7px; }
+  .area-bar { height: 7px; border-radius: 4px; }
+  .area-pct { width: 34px; text-align: right; font-weight: 700; font-size: 0.82rem; }
+  .weak-banner { background: linear-gradient(135deg,#1b5e20,#43a047); color: white; border-radius: 12px; padding: 14px 18px; margin: 16px 0; text-align: left; }
+  .weak-banner h4 { margin-bottom: 6px; }
+  .weak-banner p { font-size: 0.83rem; opacity: 0.9; margin-bottom: 8px; }
+  .weak-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .weak-tag { background: rgba(255,255,255,0.25); border-radius: 6px; padding: 3px 9px; font-size: 0.78rem; font-weight: 700; }
+  .hidden { display: none !important; }
+  @media(max-width:500px){ .info-grid,.stats-grid{grid-template-columns:1fr 1fr} .topic-grid{grid-template-columns:1fr} }
+
+  /* === TABLA RELACIONA COLUMNAS === */
+  .match-table { width:100%; border-collapse:collapse; margin-bottom:16px; font-size:0.88rem; }
+  .match-table th { background:#e8f5e9; color:#1b5e20; font-weight:800; padding:8px 10px; text-align:left; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.4px; }
+  .match-table td { padding:8px 10px; border-bottom:1px solid #f0f0f0; vertical-align:top; line-height:1.45; }
+  .match-table tr:last-child td { border-bottom:none; }
+  .match-table td:first-child { font-weight:800; color:#1b5e20; white-space:nowrap; width:50px; }
+  .match-table td:nth-child(2) { color:#333; border-right:2px dashed #c8e6c9; padding-right:14px; }
+  .match-table td:nth-child(3) { font-weight:800; color:#0d47a1; white-space:nowrap; width:30px; padding-left:14px; }
+  .match-table td:last-child { color:#333; }
+  .match-table-wrap { background:#f8fffe; border:1px solid #c8e6c9; border-radius:10px; padding:4px; margin-bottom:14px; overflow-x:auto; }
+  .complexity-badge { display:inline-flex; align-items:center; gap:4px; background:#fff3e0; color:#e65100; border:1px solid #ffcc02; border-radius:6px; font-size:0.68rem; font-weight:800; padding:2px 7px; margin-left:6px; vertical-align:middle; }
+  .q-badge-wrap { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+
+  /* === BIBLIOGRAFÍA === */
+  .biblio-section { max-width: 760px; margin: 0 auto; padding: 10px 16px 60px; }
+  .biblio-toggle { width: 100%; background: linear-gradient(135deg,#1b5e20,#43a047); color: white; border: none; border-radius: 12px; padding: 14px 20px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: opacity 0.2s; }
+  .biblio-toggle:hover { opacity: 0.9; }
+  .biblio-toggle .arrow { transition: transform 0.3s; font-size: 1rem; }
+  .biblio-toggle.open .arrow { transform: rotate(180deg); }
+  .biblio-box { background: white; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 24px; display: none; }
+  .biblio-box.show { display: block; }
+  .biblio-box h3 { font-size: 0.82rem; font-weight: 800; color: #1b5e20; text-transform: uppercase; letter-spacing: 0.6px; margin: 18px 0 8px; border-bottom: 2px solid #e8f5e9; padding-bottom: 4px; }
+  .biblio-box h3:first-child { margin-top: 0; }
+  .biblio-list { list-style: none; padding: 0; margin: 0 0 4px; }
+  .biblio-list li { padding: 6px 0 6px 14px; border-left: 3px solid #c8e6c9; margin-bottom: 5px; font-size: 0.82rem; line-height: 1.55; color: #333; }
+  .biblio-list li strong { color: #1b5e20; }
+  .biblio-url { font-size: 0.74rem; color: #43a047; word-break: break-all; display: block; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-logo">📂</div>
+  <div>
+    <h1>Simulacro INE – Módulo D · v6 <span style="font-size:.75em;opacity:.85">🔀 Aleatorio + 🧩 Relaciona</span></h1>
+    <p>Conocimientos técnicos · Vocalía de Organización Electoral</p>
+  </div>
+  <div class="header-right">
+    <div class="timer" id="timer">50:00</div>
+    <div style="font-size:0.68rem;opacity:0.7;margin-top:2px">tiempo restante</div>
+  </div>
+</div>
+<div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+<div class="main">
+  <div class="start-screen" id="startScreen">
+    <h2>📂 Módulo D — Conocimientos técnicos del cargo</h2>
+    <p style="background:#e8f5e9;border-radius:10px;padding:10px;color:#1b5e20;font-weight:600;margin-bottom:14px">🎯 Este módulo evalúa lo más operativo del puesto. ¡Es clave dominarlo! · <strong>🔀 Preguntas en orden aleatorio cada vez</strong></p>
+    <p style="background:#fff3e0;border-radius:10px;padding:9px 12px;color:#e65100;font-weight:600;margin-bottom:14px;font-size:0.87rem">🧩 <strong>v6 · Mayor complejidad:</strong> incluye preguntas de <em>relaciona columnas</em> donde las tres opciones son muy similares entre sí — ¡lee con cuidado!</p>
+    <div class="info-grid">
+      <div class="info-card"><div class="num">38</div><div class="lbl">Preguntas</div></div>
+      <div class="info-card"><div class="num">50</div><div class="lbl">Minutos</div></div>
+      <div class="info-card"><div class="num">5</div><div class="lbl">Áreas</div></div>
+    </div>
+    <div class="topic-section">
+      <div class="topic-section-title">🏢 1. Estructura del INE (6 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>1.1 Direcciones ejecutivas</span><span class="cnt">1 🧩</span></div>
+        <div class="topic-pill"><span>1.2 Juntas locales y distritales ejecutivas</span><span class="cnt">2 🧩</span></div>
+        <div class="topic-pill"><span>1.3 Consejos locales y distritales</span><span class="cnt">3 🧩</span></div>
+      </div>
+      <div class="topic-section-title">🗓️ 2. Proceso electoral (18 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>2.1 Actividades de preparación</span><span class="cnt">3 🧩</span></div>
+        <div class="topic-pill"><span>2.2 Modalidades de voto anticipado</span><span class="cnt">3 🧩</span></div>
+        <div class="topic-pill"><span>2.3 Proceso electoral del PJF</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>2.4 Atribuciones especiales del INE</span><span class="cnt">3 🧩</span></div>
+        <div class="topic-pill"><span>2.5 Actividades del día de la jornada</span><span class="cnt">5 🧩</span></div>
+      </div>
+      <div class="topic-section-title">⚖️ 3. Justicia electoral (8 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>3.1 Delitos en materia electoral</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>3.2 Medios de impugnación</span><span class="cnt">2 🧩</span></div>
+        <div class="topic-pill"><span>3.3 Violencia política contra mujeres</span><span class="cnt">4 🧩</span></div>
+      </div>
+      <div class="topic-section-title">📦 4. Organización de la elección (8 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>4.1 Acreditación de observadores</span><span class="cnt">2</span></div>
+        <div class="topic-pill"><span>4.2 Casillas electorales</span><span class="cnt">2 🧩</span></div>
+        <div class="topic-pill"><span>4.3 Recepción, almacenamiento y distribución</span><span class="cnt">3 🧩</span></div>
+      </div>
+      <div class="topic-section-title">📊 5. Resultados y declaración de validez (4 preguntas)</div>
+      <div class="topic-grid">
+        <div class="topic-pill"><span>5.1 Remisión de documentación</span><span class="cnt">1</span></div>
+        <div class="topic-pill"><span>5.2 Cómputos distritales</span><span class="cnt">2 🧩</span></div>
+      </div>
+      <p style="font-size:0.75rem;color:#888;margin-top:6px;text-align:left;padding-left:4px">🧩 = incluye pregunta de <em>relaciona columnas</em></p>
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="startExam()">Comenzar diagnóstico</button>
+  </div>
+  <div id="examScreen" class="hidden"></div>
+  <div id="resultsScreen" class="hidden"></div>
+</div>
+<div class="nav-bar hidden" id="navBar">
+  <div class="nav-info">Pregunta <span id="navCurrent">1</span> de <span id="navTotal">40</span></div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-secondary" id="btnPrev" onclick="prevQ()">← Anterior</button>
+    <button class="btn btn-primary" id="btnNext" onclick="nextQ()">Siguiente →</button>
+  </div>
+</div>
+<script>
+const Q=[
+  // === 1.1 DIRECCIONES EJECUTIVAS (1) — RELACIONA COLUMNAS ===
+  {sa:"1.1",sal:"Direcciones ejecutivas",area:"Estructura del INE",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Dirección Ejecutiva</th><th colspan="2">Función principal</th></tr></thead><tbody>
+<tr><td>1.</td><td>DEOE</td><td>a)</td><td>Capacitar a funcionarios de casilla y promover cultura democrática ciudadana</td></tr>
+<tr><td>2.</td><td>DECEyEC</td><td>b)</td><td>Administrar el Registro Federal de Electores y el padrón electoral</td></tr>
+<tr><td>3.</td><td>DERFE</td><td>c)</td><td>Coordinar la logística del proceso electoral: casillas, observadores y materiales</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada Dirección Ejecutiva del INE con su función principal:",
+   o:["1c, 2a, 3b","1a, 2c, 3b","1c, 2b, 3a"],
+   c:0,ex:"La DEOE (1c) coordina la logística electoral. La DECEyEC (2a) capacita funcionarios de casilla y desarrolla educación cívica. La DERFE (3b) administra el Registro Federal de Electores y el padrón. Son tres direcciones complementarias con funciones sustantivas distintas."},
+
+  // === 1.2 JUNTAS LOCALES Y DISTRITALES (2) ===
+  {sa:"1.2",sal:"Juntas locales y distritales ejecutivas",area:"Estructura del INE",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Cuál es la diferencia entre una Junta Local Ejecutiva y una Junta Distrital Ejecutiva del INE?",
+   o:["Son órganos equivalentes; la Junta Local opera únicamente en la Ciudad de México y la Distrital en los demás estados.",
+      "La Junta Local Ejecutiva coordina y supervisa el trabajo de las Juntas Distritales en la entidad; la Junta Distrital Ejecutiva opera directamente en cada uno de los 300 distritos electorales.",
+      "Las Juntas Locales son temporales (solo en proceso electoral); las Distritales son permanentes y tienen rango superior."],
+   c:1,ex:"La Junta Local Ejecutiva es el órgano desconcentrado permanente de nivel estatal que coordina a las Juntas Distritales de la entidad. Existen 32 (una por entidad federativa). Las 300 Juntas Distritales operan en cada distrito electoral federal uninominal."},
+
+  // === 1.2 — RELACIONA COLUMNAS: vocales y funciones ===
+  {sa:"1.2",sal:"Juntas locales y distritales ejecutivas",area:"Estructura del INE",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Vocal de la Junta Distrital</th><th colspan="2">Función específica</th></tr></thead><tbody>
+<tr><td>1.</td><td>Vocal Ejecutivo/a</td><td>a)</td><td>Actúa como secretario/a del Consejo Distrital; levanta actas y da fe de acuerdos</td></tr>
+<tr><td>2.</td><td>Vocal Secretario/a</td><td>b)</td><td>Coordina la capacitación de funcionarios de casilla y la educación cívica en el distrito</td></tr>
+<tr><td>3.</td><td>Vocal de Capacitación</td><td>c)</td><td>Preside la Junta y representa al INE en el distrito; responsable de la gestión operativa</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada vocal de la Junta Distrital Ejecutiva con su función específica:",
+   o:["1c, 2a, 3b","1a, 2c, 3b","1b, 2c, 3a"],
+   c:0,ex:"El Vocal Ejecutivo/a (1c) preside la Junta y representa al INE en el distrito. El Vocal Secretario/a (2a) actúa también como secretario/a del Consejo Distrital durante el proceso electoral. El Vocal de Capacitación (3b) coordina la capacitación de funcionarios de casilla y la educación cívica."},
+
+  // === 1.3 CONSEJOS LOCALES Y DISTRITALES (3) ===
+  {sa:"1.3",sal:"Consejos locales y distritales",area:"Estructura del INE",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Cuál es la diferencia entre la Junta Distrital Ejecutiva y el Consejo Distrital del INE en cuanto a su naturaleza y temporalidad?",
+   o:["La Junta Distrital Ejecutiva es el órgano permanente de carácter técnico-ejecutivo; el Consejo Distrital es el órgano colegiado de decisión que se instala temporalmente durante el proceso electoral.",
+      "Son el mismo órgano con dos nombres distintos según el periodo del año; ambos tienen igual jerarquía.",
+      "El Consejo Distrital es el órgano permanente; la Junta Distrital solo opera durante la jornada electoral y luego se disuelve."],
+   c:0,ex:"La Junta Distrital Ejecutiva es permanente y técnico-ejecutiva (presidida por el Vocal Ejecutivo). El Consejo Distrital es temporal, se instala en octubre del año previo a la elección y está integrado por un Consejero Presidente y seis Consejeros Electorales Distritales con derecho a voto."},
+
+  {sa:"1.3",sal:"Consejos locales y distritales",area:"Estructura del INE",cx:false,
+   p:null,pt:null,mt:null,
+   q:"Durante las sesiones del Consejo Distrital, los representantes de los partidos políticos tienen voz pero no voto. ¿Por qué es relevante esta distinción?",
+   o:["Para que los partidos no conozcan los acuerdos del Consejo antes de publicarse en el Diario Oficial.",
+      "Para que los partidos puedan cobrar sus prerrogativas electorales sin necesidad de rendir cuentas directas al INE.",
+      "Para garantizar que las decisiones sean tomadas por consejeros ciudadanos imparciales, mientras los partidos expresan su posición y queda constancia de ello en acta."],
+   c:2,ex:"La distinción voz-sin-voto protege la autonomía e imparcialidad del INE: los consejeros ciudadanos deciden sin estar sujetos a la presión del voto partidista, pero los partidos pueden expresarse y sus posiciones quedan en el acta, lo que garantiza transparencia y rendición de cuentas."},
+
+  // === 1.3 — RELACIONA: órgano / característica ===
+  {sa:"1.3",sal:"Consejos locales y distritales",area:"Estructura del INE",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Órgano o cargo distrital</th><th colspan="2">Característica</th></tr></thead><tbody>
+<tr><td>1.</td><td>Junta Distrital Ejecutiva</td><td>a)</td><td>Se instala en octubre del año previo a la elección; integrado por un consejero presidente y seis consejeros electorales con voto</td></tr>
+<tr><td>2.</td><td>Consejo Distrital</td><td>b)</td><td>Órgano permanente presidido por el Vocal Ejecutivo; carácter técnico-operativo</td></tr>
+<tr><td>3.</td><td>Vocal Secretario/a</td><td>c)</td><td>Desempeña la secretaría del Consejo Distrital durante el proceso electoral</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada órgano o cargo distrital con su característica correcta:",
+   o:["1b, 2a, 3c","1a, 2b, 3c","1c, 2a, 3b"],
+   c:0,ex:"La Junta Distrital Ejecutiva (1b) es permanente y técnico-operativa. El Consejo Distrital (2a) es temporal, se instala antes de la elección con consejeros con voto. El Vocal Secretario/a (3c) actúa como secretario del Consejo Distrital durante el proceso."},
+
+  // === 2.1 ACTIVIDADES DE PREPARACIÓN (3) ===
+  {sa:"2.1",sal:"Actividades de preparación de la elección",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Cuál es la diferencia entre el Padrón Electoral y el Listado Nominal de Electores?",
+   o:["Son sinónimos; ambos refieren exactamente a la misma base de datos del INE.",
+      "El Padrón Electoral incluye a todos los ciudadanos mayores de 18 años; el Listado Nominal solo a quienes votaron en la elección federal anterior.",
+      "El Padrón Electoral es la base de datos de todos los ciudadanos inscritos; el Listado Nominal contiene solo a quienes tienen credencial para votar vigente y pueden participar en una elección específica."],
+   c:2,ex:"El Padrón Electoral es el registro de todos los ciudadanos que han solicitado su inscripción. El Listado Nominal se obtiene del Padrón y contiene solo a quienes tienen credencial para votar vigente; es el documento que se usa en casilla para verificar el derecho a votar."},
+
+  {sa:"2.1",sal:"Actividades de preparación de la elección",area:"Proceso electoral",cx:false,
+   p:"Durante la etapa de preparación de la elección, el INE publica y distribuye el catálogo de casillas para que partidos políticos y ciudadanos puedan verificar la ubicación de cada una.",
+   pt:"Aprobación y publicación de casillas",mt:null,
+   q:"¿Qué puede hacer un partido político que considere que una casilla fue aprobada en un lugar que no cumple los requisitos legales?",
+   o:["Presentar una inconformidad ante el Consejo Distrital dentro del plazo legal para que se modifique la ubicación.",
+      "Acudir directamente ante el TEPJF mediante un Juicio de Revisión Constitucional (JRC) para impugnar la ubicación.",
+      "No puede hacer nada; una vez aprobada por el Consejo Distrital, la decisión sobre casillas es definitiva e inapelable."],
+   c:0,ex:"Los partidos políticos pueden presentar inconformidades ante el Consejo Distrital respecto a la ubicación o características de las casillas aprobadas, dentro de los plazos que establece la LGIPE. El Consejo Distrital debe resolver y, en su caso, modificar o ratificar la casilla."},
+
+  // === 2.1 — RELACIONA: herramienta / uso ===
+  {sa:"2.1",sal:"Actividades de preparación de la elección",area:"Proceso electoral",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Herramienta o instrumento</th><th colspan="2">Uso o propósito</th></tr></thead><tbody>
+<tr><td>1.</td><td>Listado Nominal</td><td>a)</td><td>Reportar en tiempo real la instalación de casillas e incidencias durante la jornada</td></tr>
+<tr><td>2.</td><td>SIJE</td><td>b)</td><td>Difundir datos preliminares de resultados la noche de la elección (sin valor jurídico definitivo)</td></tr>
+<tr><td>3.</td><td>PREP</td><td>c)</td><td>Verificar en casilla que el ciudadano tiene credencial vigente y derecho a sufragar</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada herramienta electoral con su uso correcto:",
+   o:["1c, 2a, 3b","1a, 2b, 3c","1b, 2c, 3a"],
+   c:0,ex:"El Listado Nominal (1c) se usa en casilla para verificar el derecho a votar. El SIJE (2a) reporta en tiempo real incidencias de la jornada. El PREP (3b) difunde resultados preliminares sin valor jurídico definitivo. Son instrumentos complementarios con propósitos distintos."},
+
+  // === 2.2 MODALIDADES DE VOTO ANTICIPADO (3) ===
+  {sa:"2.2",sal:"Modalidades de voto anticipado",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué diferencia existe entre el voto anticipado en domicilio y el voto en casillas especiales?",
+   o:["El voto en domicilio es para ciudadanos con discapacidad o adultos mayores de 60 años que no pueden ir a su casilla; las casillas especiales son para ciudadanos que están fuera de su sección el día de la jornada.",
+      "El voto en domicilio es para mexicanos residentes en el extranjero; las casillas especiales atienden exclusivamente a ciudadanos hospitalizados.",
+      "Ambas modalidades sirven al mismo perfil de ciudadano; la diferencia es únicamente el método de entrega de la boleta al INE."],
+   c:0,ex:"El voto anticipado en domicilio atiende a ciudadanos con discapacidad o adultos mayores de 60 años que no pueden desplazarse a su casilla. Las casillas especiales permiten votar a ciudadanos que, por razones de trabajo o tránsito, se encuentran fuera de su sección el día de la jornada."},
+
+  // === 2.2 — RELACIONA: modalidad / perfil de ciudadano ===
+  {sa:"2.2",sal:"Modalidades de voto anticipado",area:"Proceso electoral",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Modalidad de voto</th><th colspan="2">Perfil del ciudadano que la usa</th></tr></thead><tbody>
+<tr><td>1.</td><td>Voto anticipado en domicilio</td><td>a)</td><td>Ciudadano fuera de su sección electoral el día de la jornada (tránsito, trabajo)</td></tr>
+<tr><td>2.</td><td>Casilla especial</td><td>b)</td><td>Ciudadano mexicano residente fuera del país, inscrito en la Lista Nominal del Extranjero</td></tr>
+<tr><td>3.</td><td>Voto desde el extranjero</td><td>c)</td><td>Ciudadano con discapacidad o adulto mayor de 60 años que no puede desplazarse a votar</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada modalidad de voto con el perfil del ciudadano que tiene derecho a utilizarla:",
+   o:["1c, 2a, 3b","1a, 2c, 3b","1b, 2a, 3c"],
+   c:0,ex:"Voto en domicilio (1c): ciudadanos con discapacidad o adultos mayores de 60 años. Casilla especial (2a): ciudadanos fuera de su sección por trabajo o tránsito, con límite de 300 votos. Voto desde el extranjero (3b): mexicanos residentes en el extranjero inscritos en la Lista Nominal del Extranjero."},
+
+  {sa:"2.2",sal:"Modalidades de voto anticipado",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Cuál es el límite de votos que puede recibir una casilla especial y por qué existe ese límite?",
+   o:["500 votos, para evitar largas filas en los puntos de alta afluencia electoral.",
+      "300 votos, para garantizar que el escrutinio pueda realizarse en tiempo razonable y mantener el control de las boletas especiales.",
+      "200 votos, límite establecido para equilibrar la carga de trabajo entre todas las casillas del distrito."],
+   c:1,ex:"Cada casilla especial tiene un límite de 300 votos por elección. Una vez agotado ese número, la casilla deja de recibir votantes para esa elección. El límite garantiza la integridad del escrutinio y el control del material electoral en esas casillas de alta movilidad."},
+
+  // === 2.3 PROCESO ELECTORAL DEL PJF (1) ===
+  {sa:"2.3",sal:"Proceso electoral del Poder Judicial de la Federación",area:"Proceso electoral",cx:false,
+   p:"La reforma judicial de 2024 implicó que, por primera vez en la historia de México, los cargos del Poder Judicial Federal serían electos por voto ciudadano directo, lo que generó nuevas responsabilidades para el INE.",
+   pt:"Elecciones del PJF — reforma 2024",mt:null,
+   q:"¿Cuál es el papel específico del INE en la organización de las elecciones de los integrantes del Poder Judicial Federal?",
+   o:["El INE organiza íntegramente el proceso: convocatoria, registro de candidatos, logística de casillas, cómputos y declaración de validez, con las mismas atribuciones que en una elección federal ordinaria.",
+      "El INE solo presta apoyo logístico; la organización integral la conduce el Comité de Evaluación del PJF, que es la autoridad rectora.",
+      "El INE únicamente verifica la identidad de los candidatos propuestos por los Poderes de la Unión, sin organizar la jornada electoral del PJF."],
+   c:0,ex:"Tras la reforma de 2024, el INE asumió la organización completa de las elecciones judiciales: convocatoria, registro, logística, jornada, cómputos y declaración de validez. Es una nueva atribución que se ejerce con el mismo marco normativo que las elecciones federales ordinarias."},
+
+  // === 2.4 ATRIBUCIONES ESPECIALES DEL INE (3) ===
+  {sa:"2.4",sal:"Atribuciones especiales del INE",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿En qué se distingue la 'atracción' de la 'delegación' como atribuciones especiales del INE respecto a los OPLEs?",
+   o:["Son sinónimas; en ambos casos el INE reemplaza permanentemente al OPLE en todas sus funciones locales.",
+      "En la delegación el INE transfiere de forma permanente sus funciones federales al OPLE; en la atracción el OPLE transfiere permanentemente sus funciones al INE.",
+      "En la atracción el INE asume la organización de una elección local que corresponde al OPLE; en la delegación el INE encomienda al OPLE tareas de elecciones federales, bajo supervisión del INE."],
+   c:2,ex:"La atracción opera de OPLE hacia INE: el INE toma el control de una elección local. La delegación opera de INE hacia OPLE: el INE le encomienda tareas concretas en elecciones federales. En ambos casos el INE mantiene la responsabilidad final y la supervisión."},
+
+  // === 2.4 — RELACIONA: atribución / dirección del flujo ===
+  {sa:"2.4",sal:"Atribuciones especiales del INE",area:"Proceso electoral",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Atribución especial del INE</th><th colspan="2">Descripción</th></tr></thead><tbody>
+<tr><td>1.</td><td>Atracción</td><td>a)</td><td>INE → OPLE: encomienda tareas específicas de elecciones federales bajo supervisión del INE</td></tr>
+<tr><td>2.</td><td>Delegación</td><td>b)</td><td>Fiscaliza origen, monto y destino de todos los recursos de partidos y candidatos (público y privado)</td></tr>
+<tr><td>3.</td><td>Fiscalización</td><td>c)</td><td>OPLE → INE: el INE asume la organización de una elección local que correspondía al OPLE</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada atribución especial del INE con su descripción correcta:",
+   o:["1c, 2a, 3b","1a, 2c, 3b","1b, 2a, 3c"],
+   c:0,ex:"Atracción (1c): el INE toma el control de elecciones locales que corresponden al OPLE. Delegación (2a): el INE encomienda tareas federales al OPLE bajo su supervisión. Fiscalización (3b): el INE revisa el origen, monto y destino de todos los recursos de partidos y candidatos."},
+
+  {sa:"2.4",sal:"Atribuciones especiales del INE",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué son los tiempos oficiales en radio y televisión que administra el INE?",
+   o:["El tiempo que el INE compra directamente a las cadenas de radio y TV para difundir propaganda del gobierno federal.",
+      "Los espacios en radio y TV que el Estado tiene por ley y que el INE distribuye gratuitamente entre partidos, candidatos y la propia autoridad electoral para difusión político-electoral.",
+      "Los minutos de cobertura informativa que los medios de comunicación deben dedicar obligatoriamente a los partidos de manera proporcional."],
+   c:1,ex:"El Art. 41 CPEUM otorga al Estado tiempos en radio y televisión. El INE administra y distribuye esos tiempos entre los partidos, candidatos y el propio instituto para propaganda electoral, prohibiéndose la contratación privada de tiempo adicional durante las campañas."},
+
+  // === 2.5 ACTIVIDADES DEL DÍA DE LA JORNADA (7) ===
+  {sa:"2.5",sal:"Actividades del día de la jornada electoral",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué acciones debe realizar el Presidente de casilla antes de las 8:00 horas para garantizar la instalación?",
+   o:["Verificar que tenga todos los materiales del paquete electoral, instalar la mampara, firmar el acta de instalación con los funcionarios presentes y declarar formalmente abierta la votación.",
+      "Solo colocar la urna y esperar a que lleguen los demás funcionarios y representantes de partidos.",
+      "Abrir el paquete electoral, contar individualmente todas las boletas y separarlas por tipo de elección antes de instalar la casilla."],
+   c:0,ex:"El Presidente debe: verificar la presencia de al menos dos funcionarios más, abrir el paquete electoral, instalar la mampara y urnas, firmar el acta de instalación con los funcionarios y representantes de partidos presentes, y declarar abierta la votación a las 8:00 horas."},
+
+  // === 2.5 — RELACIONA: tipo de voto / definición ===
+  {sa:"2.5",sal:"Actividades del día de la jornada electoral",area:"Proceso electoral",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Tipo de voto</th><th colspan="2">Definición y tratamiento en el escrutinio</th></tr></thead><tbody>
+<tr><td>1.</td><td>Voto válido</td><td>a)</td><td>Representante de partido lo cuestiona durante el escrutinio; se separa y lo resuelve el Consejo Distrital</td></tr>
+<tr><td>2.</td><td>Voto nulo</td><td>b)</td><td>La voluntad del ciudadano es inequívoca aunque la marca no esté exactamente dentro del recuadro</td></tr>
+<tr><td>3.</td><td>Voto impugnado</td><td>c)</td><td>Tiene marcas para dos o más partidos, o carece de marca; se contabiliza separado sin asignarse a ningún partido</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada tipo de voto con su definición y tratamiento en el escrutinio:",
+   o:["1b, 2c, 3a","1a, 2b, 3c","1c, 2a, 3b"],
+   c:0,ex:"Voto válido (1b): la intención es inequívoca aunque la marca no esté en el recuadro. Voto nulo (2c): marcas para dos o más partidos o sin marca; se contabiliza por separado. Voto impugnado (3a): lo cuestiona un representante de partido en el escrutinio y lo resuelve el Consejo Distrital."},
+
+  {sa:"2.5",sal:"Actividades del día de la jornada electoral",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿En qué casos puede un ciudadano ser rechazado en la casilla sin poder votar?",
+   o:["Si llega después de las 18:00 horas y la fila ya se ha disuelto completamente.",
+      "Si no porta su credencial para votar, o su nombre no aparece en el listado nominal, o en casilla especial ya se agotó el límite de 300 votos.",
+      "Si el funcionario de casilla considera subjetivamente que el ciudadano está bajo efectos del alcohol o drogas."],
+   c:1,ex:"Un ciudadano puede ser rechazado si: no presenta su credencial para votar, su nombre no aparece en el listado nominal de esa sección (salvo casillas especiales), o si en casilla especial ya se alcanzó el límite de 300 votos. El funcionario no puede rechazar a un ciudadano por criterios subjetivos."},
+
+  {sa:"2.5",sal:"Actividades del día de la jornada electoral",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué debe hacer el Presidente de casilla si se presenta un incidente de alteración del orden durante la votación?",
+   o:["Suspender definitivamente la votación e informar de inmediato al Consejo Distrital para que tome la decisión final.",
+      "Solicitar el auxilio de la fuerza pública, registrar el incidente en el acta correspondiente y continuar la votación una vez restablecida la normalidad.",
+      "Continuar la votación sin documentar el incidente para no generar alarma entre los demás votantes."],
+   c:1,ex:"El Presidente de casilla debe solicitar el auxilio de la fuerza pública (policía), documentar el incidente en el acta de incidentes de la jornada y, restablecido el orden, continuar la votación. Solo se suspende de manera definitiva en casos extremos que impidan garantizar la seguridad de los votantes."},
+
+  {sa:"2.5",sal:"Actividades del día de la jornada electoral",area:"Proceso electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Cuál es el procedimiento correcto cuando, al abrir una urna para el escrutinio, se encuentran boletas de una elección diferente?",
+   o:["Separar las boletas por tipo de elección, contar cada grupo por separado y registrar el incidente en el acta, continuando el escrutinio normalmente.",
+      "Anular automáticamente todos los votos de esa urna por error de procedimiento, sin mayor análisis.",
+      "Mezclar todas las boletas y contarlas como válidas para la elección que corresponde a esa urna."],
+   c:0,ex:"Si se encuentran boletas de otra elección en una urna, los funcionarios deben separarlas, registrar el incidente en el acta correspondiente y continuar el escrutinio contando únicamente las boletas que correspondan a esa urna. Las boletas ajenas se registran como irregularidad pero no invalidan automáticamente el escrutinio."},
+
+  // === 3.1 DELITOS EN MATERIA ELECTORAL (1) ===
+  {sa:"3.1",sal:"Delitos en materia electoral",area:"Justicia electoral",cx:false,
+   p:"La Ley General en Materia de Delitos Electorales (LGMDE) tipifica conductas que pueden cometer distintos actores durante el proceso electoral.",
+   pt:"Responsabilidad penal electoral",mt:null,
+   q:"Un vocal de organización filtra el listado nominal a un partido antes de su publicación oficial. ¿Qué tipo de responsabilidad enfrenta y ante qué autoridad?",
+   o:["Solo responsabilidad administrativa ante el INE, con posible destitución del cargo y sanción económica.",
+      "Responsabilidad civil únicamente, pues el daño es patrimonial para los partidos que no recibieron la información.",
+      "Responsabilidad penal por delito electoral ante la FISEL-FGR, y también responsabilidad administrativa ante el INE; ambas son independientes y pueden concurrir."],
+   c:2,ex:"Filtrar información del listado nominal es un delito electoral tipificado en la LGMDE. El funcionario enfrenta: 1) responsabilidad penal ante la FISEL (órgano de la FGR), y 2) responsabilidad administrativa ante el INE. Ambas son independientes y pueden concurrir simultáneamente."},
+
+  // === 3.2 MEDIOS DE IMPUGNACIÓN (2) — RELACIONA ===
+  {sa:"3.2",sal:"Medios de impugnación en materia electoral",area:"Justicia electoral",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Medio de impugnación</th><th colspan="2">Objeto y característica clave</th></tr></thead><tbody>
+<tr><td>1.</td><td>RIN</td><td>a)</td><td>Impugna resultados en actas de cómputo distrital; plazo de 4 días naturales desde el cómputo</td></tr>
+<tr><td>2.</td><td>JIN</td><td>b)</td><td>Protege derechos político-electorales individuales del ciudadano; lo interpone el propio ciudadano</td></tr>
+<tr><td>3.</td><td>JDC</td><td>c)</td><td>Impugna actos del Consejo Distrital o Local durante la preparación del proceso electoral</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada medio de impugnación con su objeto y característica principal:",
+   o:["1c, 2a, 3b","1a, 2c, 3b","1b, 2a, 3c"],
+   c:0,ex:"El RIN (1c) impugna actos del Consejo Distrital durante la preparación del proceso. El JIN (2a) impugna resultados en actas de cómputo distrital con plazo de 4 días naturales. El JDC (3b) protege los derechos político-electorales individuales de los ciudadanos ante el TEPJF."},
+
+  {sa:"3.2",sal:"Medios de impugnación en materia electoral",area:"Justicia electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Cuál es el plazo para interponer un Juicio de Inconformidad (JIN) contra los resultados del cómputo distrital?",
+   o:["Cuatro días naturales contados a partir del día siguiente a la conclusión del cómputo distrital.",
+      "Diez días hábiles a partir de la publicación de los resultados en el Diario Oficial de la Federación.",
+      "Treinta días naturales contados a partir de la jornada electoral."],
+   c:0,ex:"Conforme al Art. 8 de la LGSMIME, el plazo general para interponer medios de impugnación es de cuatro días naturales contados desde el día siguiente a aquel en que se tenga conocimiento del acto impugnado. Para el JIN, el plazo corre desde la conclusión del cómputo distrital."},
+
+  // === 3.3 VIOLENCIA POLÍTICA CONTRA LAS MUJERES (4) ===
+  {sa:"3.3",sal:"Violencia política contra las mujeres en razón de género",area:"Justicia electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué elementos deben concurrir para que un acto se considere violencia política contra las mujeres en razón de género (VPMRG)?",
+   o:["Que sea un acto físico de violencia ocurrido necesariamente durante una campaña electoral activa.",
+      "Que sea cometido únicamente por hombres contra mujeres que sean candidatas a algún cargo de elección popular.",
+      "Que la acción u omisión esté basada en el género de la víctima y tenga por objeto o resultado menoscabar, anular o impedir el ejercicio de sus derechos político-electorales."],
+   c:2,ex:"La VPMRG requiere: 1) que el acto (acción u omisión) esté motivado o basado en el género, y 2) que tenga por objeto o resultado afectar el ejercicio de derechos político-electorales de mujeres. Puede ser cometida por cualquier persona (hombre o mujer) y no se limita al periodo de campaña."},
+
+  {sa:"3.3",sal:"Violencia política contra las mujeres en razón de género",area:"Justicia electoral",cx:false,
+   p:"Una presidenta municipal recibe mensajes anónimos amenazantes que la presionan a renunciar a su cargo. Sus colaboradores varones no reciben este tipo de mensajes.",
+   pt:"Caso de VPMRG",mt:null,
+   q:"¿Este caso puede constituir violencia política contra las mujeres en razón de género? ¿Por qué?",
+   o:["Sí, porque la presión para renunciar mediante amenazas, dirigida específicamente a ella por su género, tiene por objeto impedir el ejercicio de su cargo como autoridad electa.",
+      "No, porque la VPMRG solo aplica durante la campaña electoral, no cuando la persona ya ejerce el cargo.",
+      "No, porque al ser mensajes anónimos la ley exige identificar plenamente al agresor antes de calificar la conducta como VPMRG."],
+   c:0,ex:"La VPMRG no se limita al periodo electoral; también protege a las mujeres que ya ejercen cargos políticos. El hecho de que solo ella reciba las amenazas (no sus colaboradores varones) es un indicador del componente de género. La presión para renunciar tiene por objeto impedir el ejercicio de su mandato."},
+
+  {sa:"3.3",sal:"Violencia política contra las mujeres en razón de género",area:"Justicia electoral",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué protocolo deben tener los partidos políticos para atender la VPMRG y quién supervisa su cumplimiento?",
+   o:["Los partidos no están obligados a tener protocolos específicos; basta con respetar la paridad de género en sus candidaturas.",
+      "Los partidos deben contar con un protocolo para prevenir, atender y sancionar la VPMRG; el INE supervisa su existencia y cumplimiento, pudiendo imponer sanciones ante su ausencia o incumplimiento.",
+      "El protocolo es voluntario y solo aplica a partidos que cuenten con más de diez legisladoras electas en el Congreso."],
+   c:1,ex:"La LGPP y la LGIPE obligan a todos los partidos a incluir en sus estatutos normas y protocolos para prevenir y sancionar la VPMRG. El INE verifica su existencia y aplicación; la ausencia o el incumplimiento pueden derivar en amonestaciones o multas al partido."},
+
+  // === 3.3 — RELACIONA: vía de denuncia / consecuencia ===
+  {sa:"3.3",sal:"Violencia política contra las mujeres en razón de género",area:"Justicia electoral",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Vía de denuncia por VPMRG</th><th colspan="2">Consecuencia y autoridad resolutora</th></tr></thead><tbody>
+<tr><td>1.</td><td>Queja electoral ante el INE</td><td>a)</td><td>Pena privativa de libertad si la conducta está tipificada como delito electoral; resuelve la FISEL-FGR</td></tr>
+<tr><td>2.</td><td>Denuncia penal ante la FISEL</td><td>b)</td><td>Sanción administrativa: multa e inhabilitación al responsable; resuelve el INE o el TEPJF</td></tr>
+<tr><td>3.</td><td>Ambas vías simultáneamente</td><td>c)</td><td>Es posible y legal; cada vía corre de forma independiente y sus consecuencias pueden acumularse</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada vía de denuncia por VPMRG con su consecuencia y autoridad competente:",
+   o:["1b, 2a, 3c","1a, 2b, 3c","1c, 2a, 3b"],
+   c:0,ex:"Queja ante el INE (1b): genera sanciones administrativas (multa, inhabilitación). Denuncia penal ante la FISEL (2a): puede resultar en pena privativa de libertad si hay delito electoral. Ambas vías (3c) pueden usarse simultáneamente ya que son independientes entre sí."},
+
+  // === 4.1 ACREDITACIÓN DE OBSERVADORES (2) ===
+  {sa:"4.1",sal:"Acreditación de personas observadoras electorales",area:"Organización de la elección",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué actividades puede y qué actividades NO puede realizar un observador electoral acreditado durante la jornada?",
+   o:["Puede observar libremente sin ninguna restricción, incluyendo asesorar directamente a los funcionarios de casilla si lo solicitan.",
+      "Puede presenciar la jornada, el escrutinio y cómputo, y levantar sus propios registros; NO puede interferir, dar instrucciones a funcionarios ni tomar partido por algún candidato o partido.",
+      "Solo puede observar la instalación de la casilla; la normativa le exige retirarse antes del inicio formal de la votación."],
+   c:1,ex:"Los observadores electorales tienen derecho a presenciar todas las etapas de la jornada (instalación, votación, escrutinio, cómputo y entrega de paquetes) y elaborar informes. Tienen prohibido: interferir en el proceso, dar indicaciones a funcionarios, pronunciarse en favor de candidatos o partidos, o realizar actividades de proselitismo."},
+
+  {sa:"4.1",sal:"Acreditación de personas observadoras electorales",area:"Organización de la elección",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Cuál es el plazo límite para que las organizaciones presenten su solicitud de acreditación de observadores ante el INE?",
+   o:["Al menos 20 días antes de la jornada electoral, ante el Consejo Distrital o Local correspondiente.",
+      "En cualquier momento durante el proceso electoral activo, sin plazo específico ni restricción de fecha.",
+      "El mismo día de la jornada electoral, siempre que presenten la documentación completa antes de las 8:00 horas."],
+   c:0,ex:"Las organizaciones deben solicitar la acreditación de sus observadores con al menos 20 días de anticipación a la jornada electoral, presentando la solicitud ante el Consejo Distrital o Local del INE correspondiente al ámbito donde realizarán la observación, con la documentación que establece la normativa."},
+
+  // === 4.2 CASILLAS ELECTORALES (2) — RELACIONA ===
+  {sa:"4.2",sal:"Casillas electorales",area:"Organización de la elección",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Tipo de casilla</th><th colspan="2">Definición y característica</th></tr></thead><tbody>
+<tr><td>1.</td><td>Casilla ordinaria</td><td>a)</td><td>Misma ubicación que la ordinaria; se instala cuando el listado nominal supera los 1,500 electores de la sección</td></tr>
+<tr><td>2.</td><td>Casilla contigua</td><td>b)</td><td>Se ubica en hospitales, reclusorios o terminales para ciudadanos fuera de su sección o con impedimentos físicos</td></tr>
+<tr><td>3.</td><td>Casilla extraordinaria</td><td>c)</td><td>Atiende hasta 1,500 electores inscritos en una sección electoral</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada tipo de casilla electoral con su definición correcta:",
+   o:["1c, 2a, 3b","1a, 2c, 3b","1b, 2a, 3c"],
+   c:0,ex:"Casilla ordinaria (1c): hasta 1,500 electores de una sección. Casilla contigua (2a): misma ubicación, cuando la sección supera 1,500 electores se divide el listado. Casilla extraordinaria (3b): se ubica en lugares de concentración (hospitales, cárceles) para ciudadanos fuera de su sección."},
+
+  {sa:"4.2",sal:"Casillas electorales",area:"Organización de la elección",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿En qué casos puede el Consejo Distrital cambiar la ubicación de una casilla ya aprobada?",
+   o:["Nunca; una vez aprobada formalmente, la ubicación es definitiva e inamovible hasta la conclusión de la jornada.",
+      "Cuando el lugar originalmente aprobado ya no está disponible, sea destruido, presente condiciones de inseguridad o sea físicamente inaccesible antes de la jornada, el Consejo Distrital puede aprobar una ubicación sustituta.",
+      "Solo cuando todos los partidos representados en el Consejo Distrital lo soliciten de manera unánime y por escrito."],
+   c:1,ex:"El Consejo Distrital puede cambiar la ubicación de una casilla cuando surja una causa sobrevenida que la haga inviable: pérdida de disponibilidad del local, daño físico, condiciones de inseguridad o inaccesibilidad. El cambio debe aprobarse en sesión del Consejo y notificarse a los partidos."},
+
+  // === 4.3 RECEPCIÓN, ALMACENAMIENTO Y DISTRIBUCIÓN (3) ===
+  {sa:"4.3",sal:"Recepción, almacenamiento, integración y distribución de documentación y materiales electorales",area:"Organización de la elección",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué documentos y materiales integran el paquete electoral que se entrega a cada Mesa Directiva de Casilla?",
+   o:["Las boletas electorales para cada elección, el listado nominal, las actas de jornada, las urnas, la mampara, el líquido indeleble, los sellos, los útiles de escritorio y demás materiales que establezca el INE.",
+      "Solo las boletas electorales y el listado nominal de la sección; los demás materiales los aportan los partidos políticos acreditados.",
+      "Únicamente las urnas y las actas de escrutinio; los funcionarios llevan sus propios útiles de escritorio."],
+   c:0,ex:"El paquete electoral es integral: incluye todos los documentos (boletas, listado nominal, actas de instalación, escrutinio y cómputo, acta de incidentes) y materiales (urnas, mampara, líquido indeleble, sellos, bolígrafo) necesarios para la jornada. El Presidente de casilla lo recibe y es responsable de su integridad."},
+
+  // === 4.3 — RELACIONA: etapa cadena de custodia / responsable ===
+  {sa:"4.3",sal:"Recepción, almacenamiento, integración y distribución de documentación y materiales electorales",area:"Organización de la elección",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Etapa de la cadena de custodia</th><th colspan="2">Responsable y acción clave</th></tr></thead><tbody>
+<tr><td>1.</td><td>Sellado del paquete en casilla</td><td>a)</td><td>CRT o Consejo Distrital recibe y registra el paquete; quedan como testigos representantes de partidos</td></tr>
+<tr><td>2.</td><td>Traslado y entrega</td><td>b)</td><td>Presidente de la MDC lleva el paquete al CRT o al Consejo Distrital y firma el acta de entrega-recepción</td></tr>
+<tr><td>3.</td><td>Recepción oficial</td><td>c)</td><td>Funcionarios de casilla sellan el paquete una vez concluido el escrutinio y cómputo de casilla</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada etapa de la cadena de custodia del paquete electoral con el responsable y la acción clave:",
+   o:["1c, 2b, 3a","1a, 2c, 3b","1b, 2a, 3c"],
+   c:0,ex:"Sellado (1c): los funcionarios de casilla sellan el paquete tras el escrutinio. Traslado (2b): el Presidente de la MDC lo lleva al CRT o Consejo Distrital y firma el acta. Recepción oficial (3a): el CRT o Consejo Distrital recibe y registra con testigos de partidos."},
+
+  {sa:"4.3",sal:"Recepción, almacenamiento, integración y distribución de documentación y materiales electorales",area:"Organización de la elección",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Con qué anticipación deben estar integrados y disponibles los paquetes electorales en la Junta Distrital?",
+   o:["Exactamente 24 horas antes de la jornada, para entregarse en la madrugada del día de la elección.",
+      "Con la anticipación suficiente para que los funcionarios de casilla puedan recogerlos, trasladarlos y tenerlos listos antes de las 8:00 horas; generalmente el día previo o primeras horas del día de la jornada.",
+      "Exactamente tres días antes, para que los partidos puedan verificar y certificar su contenido."],
+   c:1,ex:"Los paquetes electorales deben estar disponibles con la anticipación suficiente para que los Presidentes de casilla puedan recogerlos, trasladarlos a la ubicación de la casilla e instalarla antes de las 8:00 horas. Habitualmente se entregan la tarde-noche anterior o muy temprano el día de la jornada, según la logística distrital."},
+
+  // === 5.1 REMISIÓN DE DOCUMENTACIÓN (1) ===
+  {sa:"5.1",sal:"Remisión de la documentación y expedientes electorales a los consejos distritales",area:"Resultados y declaración de validez",cx:false,
+   p:null,pt:null,mt:null,
+   q:"¿Qué tratamiento especial reciben los votos impugnados dentro del expediente de casilla al llegar al Consejo Distrital?",
+   o:["Se destruyen automáticamente al recibirse en el Consejo Distrital, para evitar que puedan alterar el resultado final.",
+      "Se incorporan de inmediato al conteo general del cómputo distrital sin ningún análisis previo adicional.",
+      "Se mantienen separados; el Consejo Distrital los examina durante el cómputo para determinar si son válidos o nulos, y su resolución puede modificar el resultado de la casilla."],
+   c:2,ex:"Los votos impugnados en casilla llegan al Consejo Distrital dentro del expediente y se examinan durante el cómputo distrital. El Consejo decide si son válidos o nulos; si son válidos, se suman al partido correspondiente; si son nulos, se contabilizan como votos nulos. Su resolución puede cambiar el resultado de esa casilla."},
+
+  // === 5.2 CÓMPUTOS DISTRITALES (2) — RELACIONA ===
+  {sa:"5.2",sal:"Cómputos distritales",area:"Resultados y declaración de validez",cx:true,
+   p:null,pt:null,
+   mt:`<div class="match-table-wrap"><table class="match-table"><thead><tr><th colspan="2">Instrumento o acto</th><th colspan="2">Naturaleza jurídica y características</th></tr></thead><tbody>
+<tr><td>1.</td><td>PREP</td><td>a)</td><td>Acto formal del Consejo Distrital; suma votos, resuelve impugnaciones, puede hacer recuentos y emite constancias con plena validez jurídica</td></tr>
+<tr><td>2.</td><td>Cómputo distrital</td><td>b)</td><td>Máxima autoridad jurisdiccional electoral; valida o anula la elección federal al resolver los medios de impugnación</td></tr>
+<tr><td>3.</td><td>TEPJF</td><td>c)</td><td>Sistema de difusión ciudadana; resultados preliminares basados en copias de actas, sin valor jurídico definitivo</td></tr>
+</tbody></table></div>`,
+   q:"Relacione cada instrumento o acto electoral con su naturaleza jurídica y características:",
+   o:["1c, 2a, 3b","1a, 2c, 3b","1b, 2a, 3c"],
+   c:0,ex:"PREP (1c): datos preliminares sin valor jurídico definitivo. Cómputo distrital (2a): acto formal con plena validez jurídica que puede implicar recuentos y emite constancias. TEPJF (3b): máxima autoridad jurisdiccional que valida o anula la elección al resolver impugnaciones."},
+
+  {sa:"5.2",sal:"Cómputos distritales",area:"Resultados y declaración de validez",cx:false,
+   p:null,pt:null,mt:null,
+   q:"Una vez realizados los cómputos distritales y entregadas las constancias de mayoría, ¿qué órgano tiene la última palabra para validar o anular una elección federal?",
+   o:["El Consejo General del INE, mediante acuerdo de sus once consejeros en sesión extraordinaria.",
+      "El Tribunal Electoral del Poder Judicial de la Federación (TEPJF), que resuelve los medios de impugnación y emite las declaraciones de validez definitivas.",
+      "La Cámara de Diputados, a través de su Comisión de Puntos Constitucionales y el pleno de la Cámara."],
+   c:1,ex:"El TEPJF es la máxima autoridad jurisdiccional en materia electoral. Tras los cómputos distritales, si hay impugnaciones (JIN), el TEPJF las resuelve y emite las declaraciones de validez definitivas. El INE no tiene facultad para validar o anular una elección; esa es una función jurisdiccional exclusiva del TEPJF."}
+];
+
+// ── ALEATORIZACIÓN v3 ──
+// Baraja el arreglo completo preservando integridad de cada pregunta
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Baraja las opciones de cada pregunta y actualiza el índice correcto
+function shuffleOptions(q) {
+  const indices = [0, 1, 2];
+  const shuffled = shuffleArray(indices);
+  return {
+    ...q,
+    o: shuffled.map(i => q.o[i]),
+    c: shuffled.indexOf(q.c)
+  };
+}
+
+// Baraja por subárea para mantener la distribución oficial, luego aplica shuffle de opciones
+const SUBS_IN_ORDER = ["1.1","1.2","1.3","2.1","2.2","2.3","2.4","2.5","3.1","3.2","3.3","4.1","4.2","4.3","5.1","5.2"];
+const shuffledQ = SUBS_IN_ORDER.flatMap(sub =>
+  shuffleArray(Q.filter(q => q.sa === sub)).map(q => shuffleOptions(q))
+);
+Q.length = 0;
+shuffledQ.forEach(q => Q.push(q));
+
+const TIME_LIMIT=50*60;
+let answers,revealed,current,timerInterval,secondsLeft;
+const SS={
+  "1.1":{bg:"#e8f5e9",color:"#1b5e20",icon:"🏢"},
+  "1.2":{bg:"#f1f8e9",color:"#33691e",icon:"🏗️"},
+  "1.3":{bg:"#e8f5e9",color:"#2e7d32",icon:"🏛️"},
+  "2.1":{bg:"#e3f2fd",color:"#0d47a1",icon:"📋"},
+  "2.2":{bg:"#e8eaf6",color:"#283593",icon:"📮"},
+  "2.3":{bg:"#fce4ec",color:"#880e4f",icon:"⚖️"},
+  "2.4":{bg:"#fff3e0",color:"#e65100",icon:"⭐"},
+  "2.5":{bg:"#f3e5f5",color:"#4a148c",icon:"🗳️"},
+  "3.1":{bg:"#ffebee",color:"#b71c1c",icon:"🚫"},
+  "3.2":{bg:"#fff8e1",color:"#f57f17",icon:"📜"},
+  "3.3":{bg:"#fce4ec",color:"#c2185b",icon:"♀️"},
+  "4.1":{bg:"#e0f2f1",color:"#004d40",icon:"👁️"},
+  "4.2":{bg:"#e8f5e9",color:"#1b5e20",icon:"🗂️"},
+  "4.3":{bg:"#f3e5f5",color:"#6a1b9a",icon:"📦"},
+  "5.1":{bg:"#e8eaf6",color:"#1a237e",icon:"📁"},
+  "5.2":{bg:"#e1f5fe",color:"#01579b",icon:"📊"}
+};
+
+function startExam(){
+  answers=new Array(Q.length).fill(null);
+  revealed=new Array(Q.length).fill(false);
+  current=0;
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('examScreen').classList.remove('hidden');
+  document.getElementById('navBar').classList.remove('hidden');
+  renderQuestion(0);
+  startTimer();
+}
+
+function renderQuestion(idx){
+  current=idx;
+  const q=Q[idx],sc=SS[q.sa]||{bg:"#e8f5e9",color:"#1b5e20",icon:"📌"};
+  const isR=revealed[idx],sel=answers[idx];
+  let ph='';
+  if(q.p) ph=`<div class="passage"><div class="passage-label">📄 ${q.pt}</div>${q.p.replace(/\n/g,'<br>')}</div>`;
+  let mth='';
+  if(q.mt) mth=q.mt;
+  const cxBadge=q.cx?`<span class="complexity-badge">🧩 Relaciona columnas</span>`:'';
+  const L=['A','B','C'];
+  const opts=q.o.map((o,i)=>{
+    let cls='option';
+    if(isR){cls+=' disabled';if(i===q.c)cls+=' correct';else if(i===sel&&i!==q.c)cls+=' incorrect';}
+    else if(i===sel)cls+=' selected';
+    return `<div class="${cls}" onclick="selOpt(${idx},${i})"><div class="option-letter">${L[i]}</div><div>${o}</div></div>`;
+  }).join('');
+  const ri=isR?(sel===q.c?'✅ Correcto':sel===null?'⏭️ Sin responder':'❌ Incorrecto'):'';
+  document.getElementById('examScreen').innerHTML=`
+    <div class="question-card">
+      <div class="q-meta">
+        <div class="q-badge-wrap"><span class="q-badge" style="background:${sc.bg};color:${sc.color}">${sc.icon} ${q.sal}</span>${cxBadge}</div>
+        <span class="q-num">${idx+1}/${Q.length}</span>
+      </div>
+      ${ph}
+      ${mth}
+      <div class="question-text">${q.q}</div>
+      <div class="options">${opts}</div>
+      <div class="explanation ${isR?'show':''}"><strong>${ri} — Explicación:</strong> ${q.ex}</div>
+    </div>
+    ${!isR&&answers[idx]!==null?`<div style="text-align:center;margin-bottom:10px"><button class="btn btn-secondary" onclick="rev(${idx})">Ver explicación</button></div>`:''}
+  `;
+  document.getElementById('progressBar').style.width=((idx+1)/Q.length*100)+'%';
+  document.getElementById('navCurrent').textContent=idx+1;
+  document.getElementById('navTotal').textContent=Q.length;
+  document.getElementById('btnPrev').disabled=idx===0;
+  document.getElementById('btnNext').textContent=idx===Q.length-1?'Ver diagnóstico 🏁':'Siguiente →';
+}
+
+function selOpt(qi,oi){if(revealed[qi])return;answers[qi]=oi;renderQuestion(qi);}
+function rev(idx){revealed[idx]=true;renderQuestion(idx);}
+function nextQ(){if(current<Q.length-1)renderQuestion(current+1);else showResults();}
+function prevQ(){if(current>0)renderQuestion(current-1);}
+
+function startTimer(){
+  secondsLeft=TIME_LIMIT;
+  timerInterval=setInterval(()=>{
+    secondsLeft--;
+    const m=Math.floor(secondsLeft/60).toString().padStart(2,'0'),s=(secondsLeft%60).toString().padStart(2,'0');
+    const el=document.getElementById('timer');
+    el.textContent=`${m}:${s}`;
+    el.className='timer'+(secondsLeft<300?' danger':secondsLeft<600?' warning':'');
+    if(secondsLeft<=0){clearInterval(timerInterval);showResults();}
+  },1000);
+}
+
+function showResults(){
+  clearInterval(timerInterval);
+  document.getElementById('examScreen').classList.add('hidden');
+  document.getElementById('navBar').classList.add('hidden');
+  const total=Q.length,answered=answers.filter(a=>a!==null).length;
+  const correct=answers.filter((a,i)=>a===Q[i].c).length;
+  const wrong=answered-correct,skipped=total-answered,pct=Math.round(correct/total*100);
+
+  const areas={};
+  Q.forEach((q,i)=>{
+    if(!areas[q.area])areas[q.area]={total:0,correct:0};
+    areas[q.area].total++;
+    if(answers[i]===q.c)areas[q.area].correct++;
+  });
+
+  const subs={};
+  Q.forEach((q,i)=>{
+    if(!subs[q.sa])subs[q.sa]={label:q.sal,total:0,correct:0};
+    subs[q.sa].total++;
+    if(answers[i]===q.c)subs[q.sa].correct++;
+  });
+
+  const weak=Object.entries(subs).filter(([,s])=>s.correct/s.total<0.6).map(([,s])=>s.label);
+  const cc=pct>=70?'score-good':pct>=50?'score-mid':'score-low';
+  const msg=pct>=80?'¡Excelente! Dominas los conocimientos técnicos del cargo.':pct>=60?'Buen avance. Refuerza los temas operativos señalados.':'Diagnóstico listo. Enfócate en las áreas marcadas antes del examen.';
+
+  const areaColors={"Estructura del INE":"#1b5e20","Proceso electoral":"#0d47a1","Justicia electoral":"#b71c1c","Organización de la elección":"#4a148c","Resultados y declaración de validez":"#01579b"};
+  const rows=Object.entries(areas).map(([name,a])=>{
+    const p=Math.round(a.correct/a.total*100);
+    const icon=p>=80?'✅':p>=60?'⚠️':'❌';
+    const bc=p>=60?`linear-gradient(90deg,${areaColors[name]||'#1b5e20'},#43a047)`:'linear-gradient(90deg,#c62828,#ef5350)';
+    return `<div class="area-row"><div class="area-name">${icon} ${name}</div><div class="area-bar-wrap"><div class="area-bar" style="width:${p}%;background:${bc}"></div></div><div class="area-pct" style="color:${p>=60?'#1b5e20':'#c62828'}">${p}%</div></div>`;
+  }).join('');
+
+  const wb=weak.length?`<div class="weak-banner"><h4>🎯 Estudia esto primero:</h4><p>Menos del 60% en estas subáreas. Son las más operativas del cargo.</p><div class="weak-tags">${weak.map(t=>`<span class="weak-tag">📌 ${t}</span>`).join('')}</div></div>`:
+    `<div style="background:#e8f5e9;border-radius:10px;padding:14px;margin:14px 0;color:#1b5e20;font-weight:600">✅ ¡Dominas todas las áreas técnicas del cargo!</div>`;
+  const tu=TIME_LIMIT-secondsLeft,tm=Math.floor(tu/60),ts=tu%60;
+
+  document.getElementById('resultsScreen').innerHTML=`
+    <div class="results-screen">
+      <div style="background:#e8f5e9;border-radius:10px;padding:9px 14px;margin-bottom:18px;font-size:0.82rem;color:#1b5e20;font-weight:600">📋 DIAGNÓSTICO MÓDULO D — ${new Date().toLocaleDateString('es-MX')}</div>
+      <div class="score-circle ${cc}">${pct}%<div class="score-sub">${correct}/${total}</div></div>
+      <h2 style="margin-bottom:8px">${msg}</h2>
+      <p style="margin-bottom:20px">Tiempo: ${tm}m ${ts}s · Respondidas: ${answered}/${total}</p>
+      <div class="stats-grid">
+        <div class="stat-card stat-correct"><div class="n">${correct}</div><div class="l">✅ Correctas</div></div>
+        <div class="stat-card stat-wrong"><div class="n">${wrong}</div><div class="l">❌ Incorrectas</div></div>
+        <div class="stat-card stat-skip"><div class="n">${skipped}</div><div class="l">⏭️ Saltadas</div></div>
+      </div>
+      ${wb}
+      <div style="text-align:left;margin-bottom:24px"><h3 style="font-size:0.9rem;font-weight:700;color:#444;margin-bottom:10px">Desempeño por área</h3>${rows}</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary btn-lg" onclick="reviewExam()">Revisar con explicaciones</button>
+        <button class="btn btn-secondary btn-lg" onclick="location.reload()">🔀 Nuevo diagnóstico (aleatorio)</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('resultsScreen').classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+
+function reviewExam(){
+  document.getElementById('resultsScreen').classList.add('hidden');
+  document.getElementById('examScreen').classList.remove('hidden');
+  document.getElementById('navBar').classList.remove('hidden');
+  revealed=revealed.map(()=>true);
+  renderQuestion(0);
+  window.scrollTo(0,0);
+}
+</script>
+
+<!-- ===== BIBLIOGRAFÍA ===== -->
+<div class="biblio-section">
+  <button class="biblio-toggle" id="biblioToggle" onclick="toggleBiblio()">
+    📚 Bibliografía y fuentes del simulacro
+    <span class="arrow">▼</span>
+  </button>
+  <div class="biblio-box" id="biblioBox">
+
+    <h3>📖 Normativa constitucional y legal</h3>
+    <ul class="biblio-list">
+      <li><strong>Constitución Política de los Estados Unidos Mexicanos (CPEUM).</strong> Art. 41. Diario Oficial de la Federación, México.</li>
+      <li><strong>Ley General de Instituciones y Procedimientos Electorales (LGIPE).</strong> INE, México.
+        <span class="biblio-url">https://sidj.ine.mx/restWSsidj-nc/app/doc/662/20/1%20 [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Ley General del Sistema de Medios de Impugnación en Materia Electoral (LGSMIME).</strong> Art. 8. INE, México.</li>
+      <li><strong>Ley General en Materia de Delitos Electorales (LGMDE).</strong> INE, México.</li>
+      <li><strong>Ley General de Partidos Políticos (LGPP).</strong> INE, México.</li>
+    </ul>
+
+    <h3>🏛️ Documentos institucionales del INE</h3>
+    <ul class="biblio-list">
+      <li><strong>Instituto Nacional Electoral (2023).</strong> Modelo de Operación para la Organización del Voto Anticipado, para el Proceso Electoral Concurrente 2023-2024.
+        <span class="biblio-url">https://repositoriodocumental.ine.mx/xmlui/bitstream/handle/123456789/153093/CGex202309-08-ap-11-a.pdf [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Instituto Nacional Electoral (2024).</strong> Acuerdo INE/CG2240/2024 — declaratoria del inicio del proceso electoral extraordinario 2024-2025 (elección de cargos del Poder Judicial Federal, Suprema Corte, Tribunal Electoral, Tribunal de Disciplina Judicial y magistraturas de circuito).
+        <span class="biblio-url">https://repositoriodocumental.ine.mx/xmlui/bitstream/handle/123456789/176817/CGex202409-23-ap-2.pdf [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Instituto Nacional Electoral (2024).</strong> Reglamento de sesiones de los consejos locales y distritales del INE.
+        <span class="biblio-url">https://sidj.ine.mx/restWSsidj-nc/app/doc/652/20/1 [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Instituto Nacional Electoral (2025).</strong> Anexo 5. Bodegas electorales y procedimiento para el conteo, sellado y agrupamiento de boletas electorales, del Reglamento de Elecciones.
+        <span class="biblio-url">https://sidj.ine.mx/restWSsidj-nc/app/doc/662/20/2/Anexos-del-Reglamento-de-Elecciones.pdf/ [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Instituto Nacional Electoral (2025).</strong> Anexo 8.1. Manual de ubicación, integración y funcionamiento de casillas electorales, del Reglamento de Elecciones.
+        <span class="biblio-url">https://sidj.ine.mx/restWSsidj-nc/app/doc/662/20/2/Anexos-del-Reglamento-de-Elecciones.pdf/ [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Instituto Nacional Electoral (2025).</strong> Instrucciones de trabajo para el Modelo de Atención Ciudadana.
+        <span class="biblio-url">https://tabasco.sgc-nacional.com/8%20Operaci%C3%B3n/Procesos%20Sustantivos/Instrucciones%20de%20trabajo%20para%20la%20Operaci%C3%B3n/Modelo%20de%20Atenci%C3%B3n%20Ciudadana.pdf [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Instituto Nacional Electoral (2025).</strong> Reglamento de Elecciones.
+        <span class="biblio-url">https://sidj.ine.mx/restWSsidj-nc/app/doc/662/20/1%20 [consulta: diciembre de 2025]</span>
+      </li>
+      <li><strong>Instituto Nacional Electoral (2025).</strong> Reglamento Interior del Instituto Nacional Electoral.
+        <span class="biblio-url">https://sidj.ine.mx/restWSsidj-nc/app/doc/663/20/1 [consulta: diciembre de 2025]</span>
+      </li>
+    </ul>
+
+    <h3>🗂️ Guía de estudio de referencia</h3>
+    <ul class="biblio-list">
+      <li><strong>Instituto Nacional Electoral (2026).</strong> <em>Guía — Vocalía de Organización Electoral local y distrital.</em> INE, México, 31 pp.
+        <span class="biblio-url">https://ine.mx/wp-content/uploads/2026/04/Guia-Vocalia-de-Organizacion-Electoral-local-y-distrital.pdf</span>
+      </li>
+    </ul>
+
+    <p style="font-size:0.74rem;color:#888;margin-top:16px;text-align:right">📌 Simulacro INE – Módulo D · v6 · Incluye preguntas de <em>relaciona columnas</em> con opciones similares · Elaborado con base en las fuentes anteriores.</p>
+  </div>
+</div>
+
+<script>
+function toggleBiblio(){
+  const btn=document.getElementById('biblioToggle');
+  const box=document.getElementById('biblioBox');
+  btn.classList.toggle('open');
+  box.classList.toggle('show');
+}
+</script>
+</body>
+</html>
